@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package uimserver.app.mydispatcher;
+option csharp_namespace = "UIM-Server.App.Mydispatcher";
+option go_package = "github.com/SSPanel-UIM/UIM-Server/app/mydispatcher";
+option java_package = "com.uim-server.app.mydispatcher";
+option java_multiple_files = true;
+
+message SessionConfig {
+  reserved 1;
+}
+
+message Config {
+  SessionConfig settings = 1;
+}
