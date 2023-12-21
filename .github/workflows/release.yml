@@ -27,11 +27,13 @@ jobs:
       matrix:
         # Include amd64 on all platforms.
         goos: [ linux ]
-        goarch: [ amd64, arm64, riscv64 ]
+        goarch: [ amd64 ]
+        goamd64: [ v1, v3 ]
         include:
           - goos: linux
-            goarch: amd64
-            goamd64: v3
+            goarch: arm64
+          - goos: linux
+            goarch: riscv64
       fail-fast: false
 
     runs-on: ubuntu-latest
@@ -43,12 +45,18 @@ jobs:
     steps:
       - name: Checkout codebase
         uses: actions/checkout@v3
-      - name: Show workflow information
+
+      - name: Configure & show workflow information
         id: get_filename
         run: |
           echo "GOOS: $GOOS, GOARCH: $GOARCH, GOAMD64: $GOAMD64"
-          echo "ASSET_NAME=$GOOS-$GOARCH$GOAMD64" >> $GITHUB_OUTPUT
-          echo "ASSET_NAME=$GOOS-$GOARCH$GOAMD64" >> $GITHUB_ENV
+          if [ "$GOAMD64" == "v3" ]; then
+            echo "ASSET_NAME=$GOOS-$GOARCH$GOAMD64" >> $GITHUB_OUTPUT
+            echo "ASSET_NAME=$GOOS-$GOARCH$GOAMD64" >> $GITHUB_ENV
+          else
+            echo "ASSET_NAME=$GOOS-$GOARCH" >> $GITHUB_OUTPUT
+            echo "ASSET_NAME=$GOOS-$GOARCH" >> $GITHUB_ENV
+          fi
 
       - name: Set up Go
         uses: actions/setup-go@v3
@@ -90,6 +98,7 @@ jobs:
               HASH="$(curl -sL "${DOWNLOAD_URL}.sha256sum" | awk -F ' ' '{print $1}')"
               [ "$(sha256sum "./build_assets/${FILE_NAME}" | awk -F ' ' '{print $1}')" == "${HASH}" ] || { echo -e "The HASH key of ${FILE_NAME} does not match cloud one."; exit 1; }
             done
+
       - name: Create ZIP archive
         shell: bash
         run: |
@@ -103,15 +112,18 @@ jobs:
           do
             openssl dgst -$METHOD $FILE | sed 's/([^)]*)//g' >>$DGST
           done
+
       - name: Change the name
         run: |
           mv build_assets uim-server-$ASSET_NAME
+
       - name: Upload files to Artifacts
         uses: actions/upload-artifact@v3
         with:
           name: uim-server-${{ steps.get_filename.outputs.ASSET_NAME }}
           path: |
             ./uim-server-${{ steps.get_filename.outputs.ASSET_NAME }}/*
+
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         if: github.event_name == 'release'

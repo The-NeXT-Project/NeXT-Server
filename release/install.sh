@@ -21,7 +21,7 @@ elif cat /proc/version | grep -Eqi "ubuntu"; then
 elif cat /proc/version | grep -Eqi "centos|red hat|redhat|rocky|alma|fedora"; then
     release="rhel"
 else
-    echo -e "未检测到系统版本，请联系脚本作者！\n" && exit 1
+    echo -e "未检测到系统版本！\n" && exit 1
 fi
 
 arch=$(arch)

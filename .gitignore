@@ -12,7 +12,7 @@ gen
 go.work
 main
 uim-server
-uim-server*
+!uim-server.sh
 access.log
 error.log
 .lego
