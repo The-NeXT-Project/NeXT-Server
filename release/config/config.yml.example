@@ -59,5 +59,4 @@ Nodes:
         DNSEnv: # DNS ENV option used by DNS provider
           ALICLOUD_ACCESS_KEY: aaa
           ALICLOUD_SECRET_KEY: bbb
-          # CF_API_EMAIL: xxx@xxx.com
-          # CF_API_KEY: xxx
+          # CF_DNS_API_TOKEN: xxx
