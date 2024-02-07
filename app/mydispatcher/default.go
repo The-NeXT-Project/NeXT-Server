@@ -110,7 +110,7 @@ func init() {
 			core.RequireFeatures(ctx, func(fdns dns.FakeDNSEngine) {
 				d.fdns = fdns
 			})
-			return d.Init(config.(*Config), om, router, pm, sm, dc)
+			return d.Init(om, router, pm, sm, dc)
 		}); err != nil {
 			return nil, err
 		}
@@ -119,8 +119,7 @@ func init() {
 }
 
 // Init initializes DefaultDispatcher.
-func (d *DefaultDispatcher) Init(config *Config,
-	om outbound.Manager, router routing.Router, pm policy.Manager, sm stats.Manager, dns dns.Client) error {
+func (d *DefaultDispatcher) Init(om outbound.Manager, router routing.Router, pm policy.Manager, sm stats.Manager, dns dns.Client) error {
 	d.ohm = om
 	d.router = router
 	d.policy = pm
@@ -146,8 +145,7 @@ func (*DefaultDispatcher) Close() error {
 	return nil
 }
 
-func (d *DefaultDispatcher) getLink(ctx context.Context,
-	network net.Network, sniffing session.SniffingRequest) (*transport.Link, *transport.Link, error) {
+func (d *DefaultDispatcher) getLink(ctx context.Context) (*transport.Link, *transport.Link, error) {
 	opt := pipe.OptionsFromContext(ctx)
 	uplinkReader, uplinkWriter := pipe.New(opt...)
 	downlinkReader, downlinkWriter := pipe.New(opt...)
@@ -255,7 +253,7 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	}
 
 	sniffingRequest := content.SniffingRequest
-	inbound, outbound, err := d.getLink(ctx, destination.Network, sniffingRequest)
+	inbound, outbound, err := d.getLink(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -189,6 +189,7 @@ func generatePrivateKey(file string, keyType certcrypto.KeyType) (crypto.Private
 	if err != nil {
 		return nil, err
 	}
+
 	defer certOut.Close()
 
 	pemKey := certcrypto.PEMBlock(privateKey)

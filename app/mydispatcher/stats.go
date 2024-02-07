@@ -21,5 +21,8 @@ func (w *SizeStatWriter) Close() error {
 }
 
 func (w *SizeStatWriter) Interrupt() {
-	common.Interrupt(w.Writer)
+	err := common.Interrupt(w.Writer)
+	if err != nil {
+		return
+	}
 }

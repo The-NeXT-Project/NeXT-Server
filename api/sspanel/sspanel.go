@@ -81,7 +81,12 @@ func readLocalRuleList(path string) (LocalRuleList []api.DetectRule) {
 	if path != "" {
 		// open the file
 		file, err := os.Open(path)
-		defer file.Close()
+		defer func(file *os.File) {
+			err := file.Close()
+			if err != nil {
+				log.Printf("Error when closing file: %s", err)
+			}
+		}(file)
 
 		// handle errors while opening
 		if err != nil {

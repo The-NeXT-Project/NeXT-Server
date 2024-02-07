@@ -1,19 +1,14 @@
 module github.com/SSPanel-UIM/UIM-Server
 
-go 1.21.5
+go 1.22
 
 require (
 	dario.cat/mergo v1.0.0
 	github.com/deckarep/golang-set v1.8.0
-	github.com/eko/gocache/lib/v4 v4.1.5
-	github.com/eko/gocache/store/go_cache/v4 v4.2.1
-	github.com/eko/gocache/store/redis/v4 v4.2.1
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-acme/lego/v4 v4.15.0
 	github.com/go-resty/resty/v2 v2.11.0
-	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/r3labs/diff/v2 v2.15.1
-	github.com/redis/go-redis/v9 v9.4.0
 	github.com/sagernet/sing v0.3.0
 	github.com/sagernet/sing-shadowsocks v0.2.6
 	github.com/spf13/cobra v1.8.0
@@ -66,10 +61,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.21.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.26.7 // indirect
 	github.com/aws/smithy-go v1.19.0 // indirect
-	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/civo/civogo v0.3.11 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/cloudflare/cloudflare-go v0.86.0 // indirect
@@ -77,7 +70,6 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/deepmap/oapi-codegen v1.9.1 // indirect
 	github.com/dgryski/go-metro v0.0.0-20211217172704-adc40b04c140 // indirect
-	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/dnsimple/dnsimple-go v1.2.0 // indirect
 	github.com/exoscale/egoscale v0.102.3 // indirect
@@ -92,7 +84,6 @@ require (
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
@@ -126,7 +117,6 @@ require (
 	github.com/liquidweb/liquidweb-go v1.6.4 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/miekg/dns v1.1.58 // indirect
 	github.com/mimuret/golang-iij-dpf v0.9.1 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
@@ -147,6 +137,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.13.2 // indirect
 	github.com/oracle/oci-go-sdk v24.3.0+incompatible // indirect
 	github.com/ovh/go-ovh v1.4.3 // indirect
+	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/pires/go-proxyproto v0.7.0 // indirect
@@ -154,10 +145,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/pquerna/otp v1.4.0 // indirect
-	github.com/prometheus/client_golang v1.14.0 // indirect
-	github.com/prometheus/client_model v0.3.0 // indirect
-	github.com/prometheus/common v0.37.0 // indirect
-	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/quic-go/qtls-go1-20 v0.4.1 // indirect
 	github.com/quic-go/quic-go v0.40.1 // indirect
 	github.com/refraction-networking/utls v1.6.0 // indirect
@@ -189,8 +176,6 @@ require (
 	github.com/vishvananda/netlink v1.2.1-beta.2.0.20230316163032-ced5aaba43e3 // indirect
 	github.com/vishvananda/netns v0.0.4 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
-	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
-	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/vultr/govultr/v2 v2.17.2 // indirect
 	github.com/xtls/reality v0.0.0-20231112171332-de1173cf2b19 // indirect
 	github.com/yandex-cloud/go-genproto v0.0.0-20220805142335-27b56ddae16f // indirect

@@ -15,9 +15,9 @@ ConnectionConfig:
 Nodes:
   - PanelType: "sspanel-old" # Panel type: sspanel-old, sspanel-v1(wip)
     ApiConfig:
-      ApiHost: "http://127.0.0.1:667"
-      ApiKey: "123"
-      NodeID: 41
+      ApiHost: "http://example.com"
+      ApiKey: "xxx"
+      NodeID: 1
       NodeType: V2ray # Node type: V2ray, Shadowsocks, Trojan
       Timeout: 30 # Timeout for the api request
       SpeedLimit: 0 # Mbps, Local settings will replace remote settings, 0 means disable
@@ -35,14 +35,7 @@ Nodes:
         WarnTimes: 0 # After (WarnTimes) consecutive warnings, the user will be limited. Set to 0 to punish overspeed user immediately.
         LimitSpeed: 0 # The speedlimit of a limited user (unit: mbps)
         LimitDuration: 0 # How many minutes will the limiting last (unit: minute)
-      GlobalDeviceLimitConfig:
-        Enable: false # Enable the global device limit of a user
-        RedisAddr: 127.0.0.1:6379 # The redis server address
-        RedisPassword: YOUR PASSWORD # Redis password
-        RedisDB: 0 # Redis DB
-        Timeout: 5 # Timeout for redis request
-        Expiry: 60 # Expiry time (second)
-      EnableFallback: false # Only support for Trojan and Vless
+      EnableFallback: false # Only support for Trojan
       FallBackConfigs:  # Support multiple fallbacks
         - SNI: # TLS SNI(Server Name Indication), Empty for any
           Alpn: # Alpn, Empty for any

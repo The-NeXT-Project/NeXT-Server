@@ -53,7 +53,7 @@ func (c *Controller) buildSSUser(userInfo *[]api.UserInfo, method string) (users
 		// shadowsocks2022 Key = "openssl rand -base64 32" and multi users needn't cipher method
 		if C.Contains(shadowaead_2022.List, strings.ToLower(method)) {
 			e := c.buildUserTag(&user)
-			userKey, err := c.checkShadowsocksPassword(user.Passwd, method)
+			userKey, err := c.checkShadowsocksPassword(user.Passwd)
 			if err != nil {
 				newError(fmt.Errorf("[UID: %d] %s", user.UID, err)).AtError().WriteToLog()
 				continue
@@ -100,6 +100,6 @@ func (c *Controller) buildUserTag(user *api.UserInfo) string {
 	return fmt.Sprintf("%s|%s|%d", c.Tag, user.Email, user.UID)
 }
 
-func (c *Controller) checkShadowsocksPassword(password string, method string) (string, error) {
+func (c *Controller) checkShadowsocksPassword(password string) (string, error) {
 	return password, nil
 }

@@ -12,7 +12,6 @@ import (
 	"github.com/xtls/xray-core/proxy"
 
 	"github.com/SSPanel-UIM/UIM-Server/api"
-	"github.com/SSPanel-UIM/UIM-Server/common/limiter"
 )
 
 func (c *Controller) removeInbound(tag string) error {
@@ -132,8 +131,8 @@ func (c *Controller) resetTraffic(upCounterList *[]stats.Counter, downCounterLis
 	}
 }
 
-func (c *Controller) AddInboundLimiter(tag string, nodeSpeedLimit uint64, userList *[]api.UserInfo, globalDeviceLimitConfig *limiter.GlobalDeviceLimitConfig) error {
-	err := c.dispatcher.Limiter.AddInboundLimiter(tag, nodeSpeedLimit, userList, globalDeviceLimitConfig)
+func (c *Controller) AddInboundLimiter(tag string, nodeSpeedLimit uint64, userList *[]api.UserInfo) error {
+	err := c.dispatcher.Limiter.AddInboundLimiter(tag, nodeSpeedLimit, userList)
 	return err
 }
 
