@@ -25,19 +25,28 @@ jobs:
   build:
     strategy:
       matrix:
-        # Include amd64 on all platforms.
+        build-tag: [ 'none', 'enable_profile' ]
         goos: [ linux ]
         goarch: [ amd64 ]
         goamd64: [ v1, v3 ]
         include:
-          - goos: linux
+          - build-tag: none
+            goos: linux
             goarch: arm64
-          - goos: linux
+          - build-tag: enable_profile
+            goos: linux
+            goarch: arm64
+          - build-tag: none
+            goos: linux
+            goarch: riscv64
+          - build-tag: enable_profile
+            goos: linux
             goarch: riscv64
       fail-fast: false
 
     runs-on: ubuntu-latest
     env:
+      BUILD_TAG: ${{ matrix.build-tag }}
       GOOS: ${{ matrix.goos }}
       GOARCH: ${{ matrix.goarch }}
       GOAMD64: ${{ matrix.goamd64 }}
@@ -49,13 +58,23 @@ jobs:
       - name: Configure & show workflow information
         id: get_filename
         run: |
-          echo "GOOS: $GOOS, GOARCH: $GOARCH, GOAMD64: $GOAMD64"
+          echo "BUILD_TAG: $BUILD_TAG, GOOS: $GOOS, GOARCH: $GOARCH, GOAMD64: $GOAMD64"
           if [ "$GOAMD64" == "v3" ]; then
-            echo "ASSET_NAME=$GOOS-$GOARCH$GOAMD64" >> $GITHUB_OUTPUT
-            echo "ASSET_NAME=$GOOS-$GOARCH$GOAMD64" >> $GITHUB_ENV
+            if [ "$BUILD_TAG" == "none" ]; then
+              echo "ASSET_NAME=$GOOS-$GOARCH$GOAMD64" >> $GITHUB_OUTPUT
+              echo "ASSET_NAME=$GOOS-$GOARCH$GOAMD64" >> $GITHUB_ENV
+            else
+              echo "ASSET_NAME=$GOOS-$GOARCH$GOAMD64-$BUILD_TAG" >> $GITHUB_OUTPUT
+              echo "ASSET_NAME=$GOOS-$GOARCH$GOAMD64-$BUILD_TAG" >> $GITHUB_ENV
+            fi
           else
-            echo "ASSET_NAME=$GOOS-$GOARCH" >> $GITHUB_OUTPUT
-            echo "ASSET_NAME=$GOOS-$GOARCH" >> $GITHUB_ENV
+            if [ "$BUILD_TAG" == "none" ]; then
+              echo "ASSET_NAME=$GOOS-$GOARCH" >> $GITHUB_OUTPUT
+              echo "ASSET_NAME=$GOOS-$GOARCH" >> $GITHUB_ENV
+            else
+              echo "ASSET_NAME=$GOOS-$GOARCH-$BUILD_TAG" >> $GITHUB_OUTPUT
+              echo "ASSET_NAME=$GOOS-$GOARCH-$BUILD_TAG" >> $GITHUB_ENV
+            fi
           fi
 
       - name: Set up Go
@@ -69,7 +88,11 @@ jobs:
       - name: Build uim-server
         run: |
           mkdir -p build_assets
-          go build -v -o build_assets/uim-server -trimpath -ldflags "-s -w -buildid="
+          if [ $BUILD_TAG != "none" ]; then
+            go build -v -o build_assets/uim-server -trimpath -ldflags "-s -w -buildid=" -tags $BUILD_TAG
+          else
+            go build -v -o build_assets/uim-server -trimpath -ldflags "-s -w -buildid="
+          fi
 
       - name: Prepare to release
         uses: nick-fields/retry@v3
