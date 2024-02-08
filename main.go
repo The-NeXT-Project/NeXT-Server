@@ -1,20 +1,36 @@
 package main
 
 import (
+	"github.com/getsentry/sentry-go"
 	"github.com/pkg/profile"
 	"log"
+	"os"
+	"time"
 
 	"github.com/SSPanel-UIM/UIM-Server/cmd"
 )
 
 var enableProfile bool
+var enableSentry bool
 
 func main() {
 	if enableProfile {
 		defer profile.Start(profile.CPUProfile, profile.ProfilePath(".")).Stop()
 	}
 
-	if err := cmd.Execute(); err != nil {
+	if enableSentry {
+		err := sentry.Init(sentry.ClientOptions{
+			Dsn: os.Getenv("SENTRY_DSN"),
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer sentry.Flush(2 * time.Second)
+	}
+
+	err := cmd.Execute()
+	if err != nil {
 		log.Fatal(err)
 	}
 }

@@ -6,6 +6,7 @@ require (
 	dario.cat/mergo v1.0.0
 	github.com/deckarep/golang-set v1.8.0
 	github.com/fsnotify/fsnotify v1.7.0
+	github.com/getsentry/sentry-go v0.27.0
 	github.com/go-acme/lego/v4 v4.15.0
 	github.com/go-resty/resty/v2 v2.11.0
 	github.com/pkg/profile v1.7.0
@@ -79,7 +80,7 @@ require (
 	github.com/felixge/fgprof v0.9.3 // indirect
 	github.com/francoispqt/gojay v1.2.13 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344 // indirect
-	github.com/go-errors/errors v1.0.1 // indirect
+	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
