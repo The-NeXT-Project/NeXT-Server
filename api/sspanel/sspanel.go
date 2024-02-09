@@ -37,13 +37,14 @@ type APIClient struct {
 // New create api instance
 func New(apiConfig *api.Config) *APIClient {
 	client := resty.New()
-
 	client.SetRetryCount(3)
+
 	if apiConfig.Timeout > 0 {
 		client.SetTimeout(time.Duration(apiConfig.Timeout) * time.Second)
 	} else {
 		client.SetTimeout(5 * time.Second)
 	}
+
 	client.OnError(func(req *resty.Request, err error) {
 		var v *resty.ResponseError
 		if errors.As(err, &v) {
@@ -78,16 +79,17 @@ func New(apiConfig *api.Config) *APIClient {
 // readLocalRuleList reads the local rule list file
 func readLocalRuleList(path string) (LocalRuleList []api.DetectRule) {
 	LocalRuleList = make([]api.DetectRule, 0)
+
 	if path != "" {
 		// open the file
 		file, err := os.Open(path)
+
 		defer func(file *os.File) {
 			err := file.Close()
 			if err != nil {
 				log.Printf("Error when closing file: %s", err)
 			}
 		}(file)
-
 		// handle errors while opening
 		if err != nil {
 			log.Printf("Error when opening file: %s", err)
@@ -95,7 +97,6 @@ func readLocalRuleList(path string) (LocalRuleList []api.DetectRule) {
 		}
 
 		fileScanner := bufio.NewScanner(file)
-
 		// read line by line
 		for fileScanner.Scan() {
 			LocalRuleList = append(LocalRuleList, api.DetectRule{
@@ -136,12 +137,14 @@ func (c *APIClient) parseResponse(res *resty.Response, path string, err error) (
 		body := res.Body()
 		return nil, fmt.Errorf("request %s failed: %s, %v", c.assembleURL(path), string(body), err)
 	}
+
 	response := res.Result().(*Response)
 
 	if response.Ret != 1 {
 		res, _ := json.Marshal(&response)
 		return nil, fmt.Errorf("ret %s invalid", string(res))
 	}
+
 	return response, nil
 }
 
@@ -219,11 +222,13 @@ func (c *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) {
 	if err := json.Unmarshal(response.Data, userListResponse); err != nil {
 		return nil, fmt.Errorf("unmarshal %s failed: %s", reflect.TypeOf(userListResponse), err)
 	}
+
 	userList, err := c.ParseUserListResponse(userListResponse)
 	if err != nil {
 		res, _ := json.Marshal(userListResponse)
 		return nil, fmt.Errorf("parse user list failed: %s", string(res))
 	}
+
 	return userList, nil
 }
 
@@ -231,9 +236,9 @@ func (c *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) {
 func (c *APIClient) ReportNodeOnlineUsers(onlineUserList *[]api.OnlineUser) error {
 	c.access.Lock()
 	defer c.access.Unlock()
-
 	reportOnline := make(map[int]int)
 	data := make([]OnlineUser, len(*onlineUserList))
+
 	for i, user := range *onlineUserList {
 		data[i] = OnlineUser{UID: user.UID, IP: user.IP}
 		if _, ok := reportOnline[user.UID]; ok {
@@ -242,10 +247,12 @@ func (c *APIClient) ReportNodeOnlineUsers(onlineUserList *[]api.OnlineUser) erro
 			reportOnline[user.UID] = 1
 		}
 	}
+
 	c.LastReportOnline = reportOnline // Update LastReportOnline
 
 	postData := &PostData{Data: data}
 	path := fmt.Sprintf("/mod_mu/users/aliveip")
+
 	res, err := c.client.R().
 		SetQueryParam("node_id", strconv.Itoa(c.NodeID)).
 		SetBody(postData).
@@ -263,22 +270,25 @@ func (c *APIClient) ReportNodeOnlineUsers(onlineUserList *[]api.OnlineUser) erro
 
 // ReportUserTraffic reports the user traffic
 func (c *APIClient) ReportUserTraffic(userTraffic *[]api.UserTraffic) error {
-
 	data := make([]UserTraffic, len(*userTraffic))
+
 	for i, traffic := range *userTraffic {
 		data[i] = UserTraffic{
 			UID:      traffic.UID,
 			Upload:   traffic.Upload,
 			Download: traffic.Download}
 	}
+
 	postData := &PostData{Data: data}
 	path := "/mod_mu/users/traffic"
+
 	res, err := c.client.R().
 		SetQueryParam("node_id", strconv.Itoa(c.NodeID)).
 		SetBody(postData).
 		SetResult(&Response{}).
 		ForceContentType("application/json").
 		Post(path)
+
 	_, err = c.parseResponse(res, path, err)
 	if err != nil {
 		return err
@@ -291,6 +301,7 @@ func (c *APIClient) ReportUserTraffic(userTraffic *[]api.UserTraffic) error {
 func (c *APIClient) GetNodeRule() (*[]api.DetectRule, error) {
 	ruleList := c.LocalRuleList
 	path := "/mod_mu/func/detect_rules"
+
 	res, err := c.client.R().
 		SetResult(&Response{}).
 		SetHeader("If-None-Match", c.eTags["rules"]).
@@ -323,6 +334,7 @@ func (c *APIClient) GetNodeRule() (*[]api.DetectRule, error) {
 			Pattern: regexp.MustCompile(r.Content),
 		})
 	}
+
 	return &ruleList, nil
 }
 
@@ -330,24 +342,29 @@ func (c *APIClient) GetNodeRule() (*[]api.DetectRule, error) {
 func (c *APIClient) ReportIllegal(detectResultList *[]api.DetectResult) error {
 
 	data := make([]IllegalItem, len(*detectResultList))
+
 	for i, r := range *detectResultList {
 		data[i] = IllegalItem{
 			ID:  r.RuleID,
 			UID: r.UID,
 		}
 	}
+
 	postData := &PostData{Data: data}
 	path := "/mod_mu/users/detectlog"
+
 	res, err := c.client.R().
 		SetQueryParam("node_id", strconv.Itoa(c.NodeID)).
 		SetBody(postData).
 		SetResult(&Response{}).
 		ForceContentType("application/json").
 		Post(path)
+
 	_, err = c.parseResponse(res, path, err)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -363,6 +380,7 @@ func (c *APIClient) ParseUserListResponse(userInfoResponse *[]UserResponse) (*[]
 	var deviceLimit, localDeviceLimit = 0, 0
 	var speedLimit uint64 = 0
 	var userList []api.UserInfo
+
 	for _, user := range *userInfoResponse {
 		if c.DeviceLimit > 0 {
 			deviceLimit = c.DeviceLimit
@@ -393,6 +411,7 @@ func (c *APIClient) ParseUserListResponse(userInfoResponse *[]UserResponse) (*[]
 		} else {
 			speedLimit = uint64((user.SpeedLimit * 1000000) / 8)
 		}
+
 		userList = append(userList, api.UserInfo{
 			UID:         user.ID,
 			UUID:        user.UUID,
@@ -423,6 +442,7 @@ func (c *APIClient) ParseSSPanelNodeInfo(nodeInfoResponse *NodeInfoResponse) (*a
 	}
 
 	nodeConfig := new(CustomConfig)
+
 	err := json.Unmarshal(nodeInfoResponse.CustomConfig, nodeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("custom_config format error: %v", err)
