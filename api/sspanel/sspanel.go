@@ -377,35 +377,10 @@ func (c *APIClient) ParseUserListResponse(userInfoResponse *[]UserResponse) (*[]
 		c.access.Unlock()
 	}()
 
-	var deviceLimit, localDeviceLimit = 0, 0
 	var speedLimit uint64 = 0
 	var userList []api.UserInfo
 
 	for _, user := range *userInfoResponse {
-		if c.DeviceLimit > 0 {
-			deviceLimit = c.DeviceLimit
-		} else {
-			deviceLimit = user.DeviceLimit
-		}
-
-		// If there is still device available, add the user
-		if deviceLimit > 0 && user.AliveIP > 0 {
-			lastOnline := 0
-			if v, ok := c.LastReportOnline[user.ID]; ok {
-				lastOnline = v
-			}
-			// If there are any available device.
-			if localDeviceLimit = deviceLimit - user.AliveIP + lastOnline; localDeviceLimit > 0 {
-				deviceLimit = localDeviceLimit
-				// If this backend server has reported any user in the last reporting period.
-			} else if lastOnline > 0 {
-				deviceLimit = lastOnline
-				// Remove this user.
-			} else {
-				continue
-			}
-		}
-
 		if c.SpeedLimit > 0 {
 			speedLimit = uint64((c.SpeedLimit * 1000000) / 8)
 		} else {
@@ -413,13 +388,12 @@ func (c *APIClient) ParseUserListResponse(userInfoResponse *[]UserResponse) (*[]
 		}
 
 		userList = append(userList, api.UserInfo{
-			UID:         user.ID,
-			UUID:        user.UUID,
-			Passwd:      user.Passwd,
-			SpeedLimit:  speedLimit,
-			DeviceLimit: deviceLimit,
-			Port:        user.Port,
-			Method:      user.Method,
+			UID:        user.ID,
+			UUID:       user.UUID,
+			Passwd:     user.Passwd,
+			SpeedLimit: speedLimit,
+			Port:       user.Port,
+			Method:     user.Method,
 		})
 	}
 

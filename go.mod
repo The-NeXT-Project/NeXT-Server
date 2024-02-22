@@ -11,7 +11,7 @@ require (
 	github.com/go-resty/resty/v2 v2.11.0
 	github.com/pkg/profile v1.7.0
 	github.com/r3labs/diff/v2 v2.15.1
-	github.com/sagernet/sing v0.3.0
+	github.com/sagernet/sing v0.3.2
 	github.com/sagernet/sing-shadowsocks v0.2.6
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
