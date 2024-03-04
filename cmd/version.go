@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	version  = "0.1.2"
+	version  = "0.1.4"
 	codename = "UIM-Server"
 	intro    = "UIM Server (XrayR Edition)"
 )
