@@ -25,7 +25,7 @@ jobs:
   build:
     strategy:
       matrix:
-        build-tag: [ 'none', 'enable_profile' ]
+        build-tag: [ 'none' ]
         goos: [ linux ]
         goarch: [ amd64 ]
         goamd64: [ v1, v3 ]
@@ -33,13 +33,7 @@ jobs:
           - build-tag: none
             goos: linux
             goarch: arm64
-          - build-tag: enable_profile
-            goos: linux
-            goarch: arm64
           - build-tag: none
-            goos: linux
-            goarch: riscv64
-          - build-tag: enable_profile
             goos: linux
             goarch: riscv64
       fail-fast: false
@@ -109,18 +103,8 @@ jobs:
             cp ${GITHUB_WORKSPACE}/release/config/custom_inbound.json ./build_assets/custom_inbound.json
             cp ${GITHUB_WORKSPACE}/release/config/rulelist ./build_assets/rulelist
             cp ${GITHUB_WORKSPACE}/release/config/config.yml.example ./build_assets/config.yml
-            LIST=('geoip geoip geoip' 'domain-list-community dlc geosite')
-            for i in "${LIST[@]}"
-            do
-              INFO=($(echo $i | awk 'BEGIN{FS=" ";OFS=" "} {print $1,$2,$3}'))
-              DOWNLOAD_URL="https://raw.githubusercontent.com/v2fly/${INFO[0]}/release/${INFO[1]}.dat"
-              FILE_NAME="${INFO[2]}.dat"
-              echo -e "Downloading ${DOWNLOAD_URL}..."
-              curl -L "${DOWNLOAD_URL}" -o ./build_assets/${FILE_NAME}
-              echo -e "Verifying HASH key..."
-              HASH="$(curl -sL "${DOWNLOAD_URL}.sha256sum" | awk -F ' ' '{print $1}')"
-              [ "$(sha256sum "./build_assets/${FILE_NAME}" | awk -F ' ' '{print $1}')" == "${HASH}" ] || { echo -e "The HASH key of ${FILE_NAME} does not match cloud one."; exit 1; }
-            done
+            wget -O ./build_assets/geoip.dat https://raw.githubusercontent.com/v2fly/geoip/release/geoip.dat
+            wget -O ./build_assets/geosite.dat https://raw.githubusercontent.com/v2fly/domain-list-community/release/dlc.dat
 
       - name: Create ZIP archive
         shell: bash
@@ -131,10 +115,8 @@ jobs:
           popd || exit 1
           FILE=./uim-server-$ASSET_NAME.zip
           DGST=$FILE.dgst
-          for METHOD in {"sha256","sha3-256"}
-          do
-            openssl dgst -$METHOD $FILE | sed 's/([^)]*)//g' >>$DGST
-          done
+          openssl dgst -sha256    $FILE | sed 's/([^)]*)//g' >>$DGST
+          openssl dgst -sha3-256  $FILE | sed 's/([^)]*)//g' >>$DGST
 
       - name: Change the name
         run: |
