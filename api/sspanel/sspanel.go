@@ -436,16 +436,16 @@ func (c *APIClient) ParseSSPanelNodeInfo(nodeInfoResponse *NodeInfoResponse) (*a
 	port := uint32(parsedPort)
 
 	switch c.NodeType {
-	case "Shadowsocks":
+	case "shadowsocks", "shadowsocks2022":
 		transportProtocol = "tcp"
-	case "V2ray":
+	case "vmess":
 		transportProtocol = nodeConfig.Network
 
 		tlsType := nodeConfig.Security
 		if tlsType == "tls" {
 			enableTLS = true
 		}
-	case "Trojan":
+	case "trojan":
 		enableTLS = true
 		transportProtocol = "tcp"
 
@@ -466,8 +466,9 @@ func (c *APIClient) ParseSSPanelNodeInfo(nodeInfoResponse *NodeInfoResponse) (*a
 		Host:              nodeConfig.Host,
 		Path:              nodeConfig.Path,
 		EnableTLS:         enableTLS,
-		CypherMethod:      nodeConfig.Method,
-		ServiceName:       nodeConfig.Servicename,
+		CipherMethod:      nodeConfig.Method,
+		ServerKey:         nodeConfig.ServerKey,
+		ServiceName:       nodeConfig.ServiceName,
 		Header:            nodeConfig.Header,
 	}
 

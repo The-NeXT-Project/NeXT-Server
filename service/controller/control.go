@@ -59,6 +59,7 @@ func (c *Controller) addUsers(users []*protocol.User, tag string) error {
 	if err != nil {
 		return fmt.Errorf("no such inbound tag: %s", err)
 	}
+
 	inboundInstance, ok := handler.(proxy.GetInbound)
 	if !ok {
 		return fmt.Errorf("handler %s has not implemented proxy.GetInbound", tag)
@@ -68,6 +69,7 @@ func (c *Controller) addUsers(users []*protocol.User, tag string) error {
 	if !ok {
 		return fmt.Errorf("handler %s has not implemented proxy.UserManager", tag)
 	}
+
 	for _, item := range users {
 		mUser, err := item.ToMemoryUser()
 		if err != nil {
@@ -78,6 +80,7 @@ func (c *Controller) addUsers(users []*protocol.User, tag string) error {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -95,12 +98,14 @@ func (c *Controller) removeUsers(users []string, tag string) error {
 	if !ok {
 		return fmt.Errorf("handler %s is not implement proxy.UserManager", err)
 	}
+
 	for _, email := range users {
 		err = userManager.RemoveUser(context.Background(), email)
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 

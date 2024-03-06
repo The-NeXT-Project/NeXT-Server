@@ -23,7 +23,8 @@ type CustomConfig struct {
 	VerifyCert     bool            `json:"verify_cert"`
 	Header         json.RawMessage `json:"header"`
 	AllowInsecure  string          `json:"allow_insecure"`
-	Servicename    string          `json:"servicename"`
+	ServerKey      string          `json:"server_key"`
+	ServiceName    string          `json:"servicename"`
 }
 
 // UserResponse is the response of user

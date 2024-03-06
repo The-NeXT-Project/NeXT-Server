@@ -26,7 +26,7 @@ type Config struct {
 }
 
 type NodeInfo struct {
-	NodeType          string // Must be V2ray, Trojan, and Shadowsocks
+	NodeType          string // Must be vmess, trojan, shadowsocks and shadowsocks2022
 	NodeID            int
 	Port              uint32
 	SpeedLimit        uint64 // Bps
@@ -36,7 +36,7 @@ type NodeInfo struct {
 	Host              string
 	Path              string
 	EnableTLS         bool
-	CypherMethod      string
+	CipherMethod      string
 	ServerKey         string
 	ServiceName       string
 	Header            json.RawMessage

@@ -8,9 +8,9 @@ import (
 	. "github.com/SSPanel-UIM/UIM-Server/service/controller"
 )
 
-func TestBuildV2ray(t *testing.T) {
+func TestBuildVmess(t *testing.T) {
 	nodeInfo := &api.NodeInfo{
-		NodeType:          "V2ray",
+		NodeType:          "vmess",
 		NodeID:            1,
 		Port:              1145,
 		SpeedLimit:        0,
@@ -20,15 +20,18 @@ func TestBuildV2ray(t *testing.T) {
 		Path:              "v2ray",
 		EnableTLS:         false,
 	}
+
 	certConfig := &mylego.CertConfig{
 		CertMode:   "http",
 		CertDomain: "test.test.tk",
 		Provider:   "alidns",
 		Email:      "test@gmail.com",
 	}
+
 	config := &Config{
 		CertConfig: certConfig,
 	}
+
 	_, err := InboundBuilder(config, nodeInfo, "test_tag")
 	if err != nil {
 		t.Error(err)
@@ -37,7 +40,7 @@ func TestBuildV2ray(t *testing.T) {
 
 func TestBuildTrojan(t *testing.T) {
 	nodeInfo := &api.NodeInfo{
-		NodeType:          "Trojan",
+		NodeType:          "trojan",
 		NodeID:            1,
 		Port:              1145,
 		SpeedLimit:        0,
@@ -47,9 +50,11 @@ func TestBuildTrojan(t *testing.T) {
 		Path:              "v2ray",
 		EnableTLS:         false,
 	}
+
 	DNSEnv := make(map[string]string)
 	DNSEnv["ALICLOUD_ACCESS_KEY"] = "aaa"
 	DNSEnv["ALICLOUD_SECRET_KEY"] = "bbb"
+
 	certConfig := &mylego.CertConfig{
 		CertMode:   "dns",
 		CertDomain: "trojan.test.tk",
@@ -57,9 +62,11 @@ func TestBuildTrojan(t *testing.T) {
 		Email:      "test@gmail.com",
 		DNSEnv:     DNSEnv,
 	}
+
 	config := &Config{
 		CertConfig: certConfig,
 	}
+
 	_, err := InboundBuilder(config, nodeInfo, "test_tag")
 	if err != nil {
 		t.Error(err)
@@ -68,7 +75,7 @@ func TestBuildTrojan(t *testing.T) {
 
 func TestBuildSS(t *testing.T) {
 	nodeInfo := &api.NodeInfo{
-		NodeType:          "Shadowsocks",
+		NodeType:          "shadowsocks",
 		NodeID:            1,
 		Port:              1145,
 		SpeedLimit:        0,
@@ -78,9 +85,11 @@ func TestBuildSS(t *testing.T) {
 		Path:              "v2ray",
 		EnableTLS:         false,
 	}
+
 	DNSEnv := make(map[string]string)
 	DNSEnv["ALICLOUD_ACCESS_KEY"] = "aaa"
 	DNSEnv["ALICLOUD_SECRET_KEY"] = "bbb"
+
 	certConfig := &mylego.CertConfig{
 		CertMode:   "dns",
 		CertDomain: "trojan.test.tk",
@@ -88,9 +97,46 @@ func TestBuildSS(t *testing.T) {
 		Email:      "test@me.com",
 		DNSEnv:     DNSEnv,
 	}
+
 	config := &Config{
 		CertConfig: certConfig,
 	}
+
+	_, err := InboundBuilder(config, nodeInfo, "test_tag")
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestBuildSS2022(t *testing.T) {
+	nodeInfo := &api.NodeInfo{
+		NodeType:          "shadowsocks2022",
+		NodeID:            1,
+		Port:              1145,
+		SpeedLimit:        0,
+		AlterID:           2,
+		TransportProtocol: "tcp",
+		Host:              "test.test.tk",
+		Path:              "v2ray",
+		EnableTLS:         false,
+	}
+
+	DNSEnv := make(map[string]string)
+	DNSEnv["ALICLOUD_ACCESS_KEY"] = "aaa"
+	DNSEnv["ALICLOUD_SECRET_KEY"] = "bbb"
+
+	certConfig := &mylego.CertConfig{
+		CertMode:   "dns",
+		CertDomain: "trojan.test.tk",
+		Provider:   "alidns",
+		Email:      "test@me.com",
+		DNSEnv:     DNSEnv,
+	}
+
+	config := &Config{
+		CertConfig: certConfig,
+	}
+
 	_, err := InboundBuilder(config, nodeInfo, "test_tag")
 	if err != nil {
 		t.Error(err)

@@ -13,19 +13,29 @@ func CreateClient() api.API {
 		APIHost:  "http://127.0.0.1:667",
 		Key:      "123",
 		NodeID:   3,
-		NodeType: "V2ray",
+		NodeType: "vmess",
 	}
+
 	client := sspanel.New(apiConfig)
+
 	return client
 }
 
-func TestGetV2rayNodeInfo(t *testing.T) {
-	client := CreateClient()
+func TestGetVmessNodeInfo(t *testing.T) {
+	apiConfig := &api.Config{
+		APIHost:  "http://127.0.0.1:667",
+		Key:      "123",
+		NodeID:   3,
+		NodeType: "vmess",
+	}
+
+	client := sspanel.New(apiConfig)
 
 	nodeInfo, err := client.GetNodeInfo()
 	if err != nil {
 		t.Error(err)
 	}
+
 	t.Log(nodeInfo)
 }
 
@@ -34,13 +44,34 @@ func TestGetSSNodeInfo(t *testing.T) {
 		APIHost:  "http://127.0.0.1:667",
 		Key:      "123",
 		NodeID:   64,
-		NodeType: "Shadowsocks",
+		NodeType: "shadowsocks",
 	}
+
 	client := sspanel.New(apiConfig)
+
 	nodeInfo, err := client.GetNodeInfo()
 	if err != nil {
 		t.Error(err)
 	}
+
+	t.Log(nodeInfo)
+}
+
+func TestGetSS2022NodeInfo(t *testing.T) {
+	apiConfig := &api.Config{
+		APIHost:  "http://127.0.0.1:667",
+		Key:      "123",
+		NodeID:   64,
+		NodeType: "shadowsocks2022",
+	}
+
+	client := sspanel.New(apiConfig)
+
+	nodeInfo, err := client.GetNodeInfo()
+	if err != nil {
+		t.Error(err)
+	}
+
 	t.Log(nodeInfo)
 }
 
@@ -49,13 +80,16 @@ func TestGetTrojanNodeInfo(t *testing.T) {
 		APIHost:  "http://127.0.0.1:667",
 		Key:      "123",
 		NodeID:   72,
-		NodeType: "Trojan",
+		NodeType: "trojan",
 	}
+
 	client := sspanel.New(apiConfig)
+
 	nodeInfo, err := client.GetNodeInfo()
 	if err != nil {
 		t.Error(err)
 	}
+
 	t.Log(nodeInfo)
 }
 

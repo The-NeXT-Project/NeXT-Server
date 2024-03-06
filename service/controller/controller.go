@@ -266,8 +266,10 @@ func (c *Controller) nodeInfoMonitor() (err error) {
 
 	} else {
 		var deleted, added []api.UserInfo
+
 		if usersChanged {
 			deleted, added = compareUserList(c.userList, newUserInfo)
+
 			if len(deleted) > 0 {
 				deletedEmail := make([]string, len(deleted))
 				for i, u := range deleted {
@@ -289,9 +291,12 @@ func (c *Controller) nodeInfoMonitor() (err error) {
 				}
 			}
 		}
+
 		log.Printf("%s %d user deleted, %d user added", c.logPrefix(), len(deleted), len(added))
 	}
+
 	c.userList = newUserInfo
+
 	return nil
 }
 
@@ -333,13 +338,16 @@ func (c *Controller) addNewTag(newNodeInfo *api.NodeInfo) (err error) {
 
 func (c *Controller) addNewUser(userInfo *[]api.UserInfo, nodeInfo *api.NodeInfo) (err error) {
 	users := make([]*protocol.User, 0)
+
 	switch nodeInfo.NodeType {
-	case "V2ray":
+	case "vmess":
 		users = c.buildVmessUser(userInfo)
-	case "Trojan":
+	case "trojan":
 		users = c.buildTrojanUser(userInfo)
-	case "Shadowsocks":
-		users = c.buildSSUser(userInfo, nodeInfo.CypherMethod)
+	case "shadowsocks":
+		users = c.buildSSUser(userInfo)
+	case "shadowsocks2022":
+		users = c.buildSS2022User(userInfo)
 	default:
 		return fmt.Errorf("unsupported node type: %s", nodeInfo.NodeType)
 	}
@@ -349,6 +357,7 @@ func (c *Controller) addNewUser(userInfo *[]api.UserInfo, nodeInfo *api.NodeInfo
 		return err
 	}
 	log.Printf("%s Added %d new users", c.logPrefix(), len(*userInfo))
+
 	return nil
 }
 
@@ -396,6 +405,7 @@ func limitUser(c *Controller, user api.UserInfo, silentUsers *[]api.UserInfo) {
 		currentSpeedLimit: c.config.AutoSpeedLimitConfig.LimitSpeed,
 		originSpeedLimit:  user.SpeedLimit,
 	}
+
 	log.Printf("Limit User: %s Speed: %d End: %s", c.buildUserTag(&user), c.config.AutoSpeedLimitConfig.LimitSpeed, time.Unix(c.limitedUsers[user].end, 0).Format("01-02 15:04:05"))
 	user.SpeedLimit = uint64((c.config.AutoSpeedLimitConfig.LimitSpeed * 1000000) / 8)
 	*silentUsers = append(*silentUsers, user)

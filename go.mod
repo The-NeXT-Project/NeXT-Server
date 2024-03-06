@@ -11,8 +11,6 @@ require (
 	github.com/go-resty/resty/v2 v2.11.0
 	github.com/pkg/profile v1.7.0
 	github.com/r3labs/diff/v2 v2.15.1
-	github.com/sagernet/sing v0.3.5
-	github.com/sagernet/sing-shadowsocks v0.2.6
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.9.0
@@ -158,6 +156,8 @@ require (
 	github.com/sacloud/go-http v0.1.6 // indirect
 	github.com/sacloud/iaas-api-go v1.11.1 // indirect
 	github.com/sacloud/packages-go v0.0.9 // indirect
+	github.com/sagernet/sing v0.3.2 // indirect
+	github.com/sagernet/sing-shadowsocks v0.2.6 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.22 // indirect
