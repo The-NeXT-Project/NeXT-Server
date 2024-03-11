@@ -7,7 +7,7 @@ require (
 	github.com/deckarep/golang-set v1.8.0
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/getsentry/sentry-go v0.27.0
-	github.com/go-acme/lego/v4 v4.15.0
+	github.com/go-acme/lego/v4 v4.16.1
 	github.com/go-resty/resty/v2 v2.11.0
 	github.com/pkg/profile v1.7.0
 	github.com/r3labs/diff/v2 v2.15.1
@@ -80,10 +80,11 @@ require (
 	github.com/francoispqt/gojay v1.2.13 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
-	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
+	github.com/go-jose/go-jose/v4 v4.0.1 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
+	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
@@ -134,6 +135,7 @@ require (
 	github.com/nrdcg/dnspod-go v0.4.0 // indirect
 	github.com/nrdcg/freemyip v0.2.0 // indirect
 	github.com/nrdcg/goinwx v0.10.0 // indirect
+	github.com/nrdcg/mailinabox v0.2.0 // indirect
 	github.com/nrdcg/namesilo v0.2.1 // indirect
 	github.com/nrdcg/nodion v0.1.0 // indirect
 	github.com/nrdcg/porkbun v0.3.0 // indirect
