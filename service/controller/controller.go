@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/xtls/xray-core/proxy"
 	"log"
 	"reflect"
 	"time"
@@ -305,10 +307,12 @@ func (c *Controller) removeOldTag(oldTag string) (err error) {
 	if err != nil {
 		return err
 	}
+
 	err = c.removeOutbound(oldTag)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -317,16 +321,19 @@ func (c *Controller) addNewTag(newNodeInfo *api.NodeInfo) (err error) {
 	if err != nil {
 		return err
 	}
+
 	err = c.addInbound(inboundConfig)
 	if err != nil {
 
 		return err
 	}
+
 	outBoundConfig, err := OutboundBuilder(c.config, newNodeInfo, c.Tag)
 	if err != nil {
 
 		return err
 	}
+
 	err = c.addOutbound(outBoundConfig)
 	if err != nil {
 
@@ -420,6 +427,7 @@ func (c *Controller) userInfoMonitor() (err error) {
 	if c.config.AutoSpeedLimitConfig.Limit > 0 && len(c.limitedUsers) > 0 {
 		log.Printf("%s Limited users:", c.logPrefix())
 		toReleaseUsers := make([]api.UserInfo, 0)
+
 		for user, limitInfo := range c.limitedUsers {
 			if time.Now().Unix() > limitInfo.end {
 				user.SpeedLimit = limitInfo.originSpeedLimit
@@ -430,6 +438,7 @@ func (c *Controller) userInfoMonitor() (err error) {
 				log.Printf("User: %s Speed: %d End: %s", c.buildUserTag(&user), limitInfo.currentSpeedLimit, time.Unix(c.limitedUsers[user].end, 0).Format("01-02 15:04:05"))
 			}
 		}
+
 		if len(toReleaseUsers) > 0 {
 			if err := c.UpdateInboundLimiter(c.Tag, &toReleaseUsers); err != nil {
 				log.Print(err)
@@ -444,6 +453,7 @@ func (c *Controller) userInfoMonitor() (err error) {
 	AutoSpeedLimit := int64(c.config.AutoSpeedLimitConfig.Limit)
 	UpdatePeriodic := int64(c.config.UpdatePeriodic)
 	limitedUsers := make([]api.UserInfo, 0)
+
 	for _, user := range *c.userList {
 		up, down, upCounter, downCounter := c.getTraffic(c.buildUserTag(&user))
 		if up > 0 || down > 0 {
@@ -474,6 +484,7 @@ func (c *Controller) userInfoMonitor() (err error) {
 			if upCounter != nil {
 				upCounterList = append(upCounterList, upCounter)
 			}
+
 			if downCounter != nil {
 				downCounterList = append(downCounterList, downCounter)
 			}
@@ -481,11 +492,13 @@ func (c *Controller) userInfoMonitor() (err error) {
 			delete(c.warnedUsers, user)
 		}
 	}
+
 	if len(limitedUsers) > 0 {
 		if err := c.UpdateInboundLimiter(c.Tag, &limitedUsers); err != nil {
 			log.Print(err)
 		}
 	}
+
 	if len(userTraffic) > 0 {
 		var err error // Define an empty error
 		if !c.config.DisableUploadTraffic {
@@ -521,6 +534,7 @@ func (c *Controller) userInfoMonitor() (err error) {
 		}
 
 	}
+
 	return nil
 }
 
@@ -548,5 +562,165 @@ func (c *Controller) certMonitor() error {
 			}
 		}
 	}
+
 	return nil
+}
+
+func (c *Controller) removeInbound(tag string) error {
+	err := c.ibm.RemoveHandler(context.Background(), tag)
+	return err
+}
+
+func (c *Controller) removeOutbound(tag string) error {
+	err := c.obm.RemoveHandler(context.Background(), tag)
+	return err
+}
+
+func (c *Controller) addInbound(config *core.InboundHandlerConfig) error {
+	rawHandler, err := core.CreateObject(c.server, config)
+	if err != nil {
+		return err
+	}
+
+	handler, ok := rawHandler.(inbound.Handler)
+	if !ok {
+		return fmt.Errorf("not an InboundHandler: %s", err)
+	}
+	if err := c.ibm.AddHandler(context.Background(), handler); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Controller) addOutbound(config *core.OutboundHandlerConfig) error {
+	rawHandler, err := core.CreateObject(c.server, config)
+	if err != nil {
+		return err
+	}
+
+	handler, ok := rawHandler.(outbound.Handler)
+	if !ok {
+		return fmt.Errorf("not an InboundHandler: %s", err)
+	}
+	if err := c.obm.AddHandler(context.Background(), handler); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Controller) addUsers(users []*protocol.User, tag string) error {
+	handler, err := c.ibm.GetHandler(context.Background(), tag)
+	if err != nil {
+		return fmt.Errorf("no such inbound tag: %s", err)
+	}
+
+	inboundInstance, ok := handler.(proxy.GetInbound)
+	if !ok {
+		return fmt.Errorf("handler %s has not implemented proxy.GetInbound", tag)
+	}
+
+	userManager, ok := inboundInstance.GetInbound().(proxy.UserManager)
+	if !ok {
+		return fmt.Errorf("handler %s has not implemented proxy.UserManager", tag)
+	}
+
+	for _, item := range users {
+		mUser, err := item.ToMemoryUser()
+		if err != nil {
+			return err
+		}
+		err = userManager.AddUser(context.Background(), mUser)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *Controller) removeUsers(users []string, tag string) error {
+	handler, err := c.ibm.GetHandler(context.Background(), tag)
+	if err != nil {
+		return fmt.Errorf("no such inbound tag: %s", err)
+	}
+
+	inboundInstance, ok := handler.(proxy.GetInbound)
+	if !ok {
+		return fmt.Errorf("handler %s is not implement proxy.GetInbound", tag)
+	}
+
+	userManager, ok := inboundInstance.GetInbound().(proxy.UserManager)
+	if !ok {
+		return fmt.Errorf("handler %s is not implement proxy.UserManager", err)
+	}
+
+	for _, email := range users {
+		err = userManager.RemoveUser(context.Background(), email)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *Controller) getTraffic(email string) (up int64, down int64, upCounter stats.Counter, downCounter stats.Counter) {
+	upName := "user>>>" + email + ">>>traffic>>>uplink"
+	downName := "user>>>" + email + ">>>traffic>>>downlink"
+	upCounter = c.stm.GetCounter(upName)
+	downCounter = c.stm.GetCounter(downName)
+
+	if upCounter != nil && upCounter.Value() != 0 {
+		up = upCounter.Value()
+	} else {
+		upCounter = nil
+	}
+
+	if downCounter != nil && downCounter.Value() != 0 {
+		down = downCounter.Value()
+	} else {
+		downCounter = nil
+	}
+
+	return up, down, upCounter, downCounter
+}
+
+func (c *Controller) resetTraffic(upCounterList *[]stats.Counter, downCounterList *[]stats.Counter) {
+	for _, upCounter := range *upCounterList {
+		upCounter.Set(0)
+	}
+
+	for _, downCounter := range *downCounterList {
+		downCounter.Set(0)
+	}
+}
+
+func (c *Controller) AddInboundLimiter(tag string, nodeSpeedLimit uint64, userList *[]api.UserInfo) error {
+	err := c.dispatcher.Limiter.AddInboundLimiter(tag, nodeSpeedLimit, userList)
+	return err
+}
+
+func (c *Controller) UpdateInboundLimiter(tag string, updatedUserList *[]api.UserInfo) error {
+	err := c.dispatcher.Limiter.UpdateInboundLimiter(tag, updatedUserList)
+	return err
+}
+
+func (c *Controller) DeleteInboundLimiter(tag string) error {
+	err := c.dispatcher.Limiter.DeleteInboundLimiter(tag)
+	return err
+}
+
+func (c *Controller) GetOnlineDevice(tag string) (*[]api.OnlineUser, error) {
+	return c.dispatcher.Limiter.GetOnlineDevice(tag)
+}
+
+func (c *Controller) UpdateRule(tag string, newRuleList []api.DetectRule) error {
+	err := c.dispatcher.RuleManager.UpdateRule(tag, newRuleList)
+	return err
+}
+
+func (c *Controller) GetDetectResult(tag string) (*[]api.DetectResult, error) {
+	return c.dispatcher.RuleManager.GetDetectResult(tag)
 }
