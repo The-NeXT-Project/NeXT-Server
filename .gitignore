@@ -1,21 +1,9 @@
-.idea
-*.iml
-out
-gen
+# IDEs
+.idea/
+.vscode/
+vendor/
+# Bin
 *.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.test
-*.out
-go.work
-main
-uim-server
+uim-server*
+# Exclude release script
 !uim-server.sh
-access.log
-error.log
-.lego
-cert
-config.yml
-vendor
