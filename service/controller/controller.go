@@ -17,9 +17,9 @@ import (
 	"github.com/xtls/xray-core/features/routing"
 	"github.com/xtls/xray-core/features/stats"
 
-	"github.com/SSPanel-UIM/UIM-Server/api"
-	"github.com/SSPanel-UIM/UIM-Server/app/mydispatcher"
-	"github.com/SSPanel-UIM/UIM-Server/common/mylego"
+	"github.com/SSPanel-NeXT/NeXT-Server/api"
+	"github.com/SSPanel-NeXT/NeXT-Server/app/mydispatcher"
+	"github.com/SSPanel-NeXT/NeXT-Server/common/mylego"
 )
 
 type LimitInfo struct {

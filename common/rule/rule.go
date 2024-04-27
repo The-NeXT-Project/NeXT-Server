@@ -10,7 +10,7 @@ import (
 
 	mapset "github.com/deckarep/golang-set"
 
-	"github.com/SSPanel-UIM/UIM-Server/api"
+	"github.com/SSPanel-NeXT/NeXT-Server/api"
 )
 
 type Manager struct {

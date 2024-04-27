@@ -79,7 +79,7 @@ before_show_menu() {
 }
 
 install() {
-    bash <(curl -Ls https://github.com/SSPanel-UIM/UIM-Server/raw/main/release/install.sh)
+    bash <(curl -Ls https://github.com/SSPanel-NeXT/NeXT-Server/raw/main/release/install.sh)
     if [[ $? == 0 ]]; then
         if [[ $# == 0 ]]; then
             start
@@ -96,7 +96,7 @@ update() {
         version=$2
     fi
     
-    bash <(curl -Ls https://github.com/SSPanel-UIM/UIM-Server/raw/main/release/install.sh) $version
+    bash <(curl -Ls https://github.com/SSPanel-NeXT/NeXT-Server/raw/main/release/install.sh) $version
     
     if [[ $? == 0 ]]; then
         echo -e "更新完成，已自动重启 UIM-Server，请使用 UIM-Server log 查看运行日志"
@@ -246,7 +246,7 @@ show_log() {
 }
 
 update_shell() {
-    wget -q -O /usr/bin/uim-server https://github.com/SSPanel-UIM/UIM-Server/raw/main/release/uim-server.sh
+    wget -q -O /usr/bin/uim-server https://github.com/SSPanel-NeXT/NeXT-Server/raw/main/release/uim-server.sh
     if [[ $? != 0 ]]; then
         echo ""
         echo -e "下载脚本失败，请检查本机能否连接 Github"
@@ -363,7 +363,7 @@ show_usage() {
 
 show_menu() {
     echo -e "
---- https://github.com/SSPanel-UIM/UIM-Server ---
+--- https://github.com/SSPanel-NeXT/NeXT-Server ---
   0. 修改配置
 ————————————————
   1. 安装 UIM-Server

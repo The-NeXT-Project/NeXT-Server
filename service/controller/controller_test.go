@@ -11,11 +11,11 @@ import (
 	"github.com/xtls/xray-core/core"
 	"github.com/xtls/xray-core/infra/conf"
 
-	"github.com/SSPanel-UIM/UIM-Server/api"
-	"github.com/SSPanel-UIM/UIM-Server/api/sspanel"
-	_ "github.com/SSPanel-UIM/UIM-Server/cmd/distro/all"
-	"github.com/SSPanel-UIM/UIM-Server/common/mylego"
-	. "github.com/SSPanel-UIM/UIM-Server/service/controller"
+	"github.com/SSPanel-NeXT/NeXT-Server/api"
+	"github.com/SSPanel-NeXT/NeXT-Server/api/sspanel"
+	_ "github.com/SSPanel-NeXT/NeXT-Server/cmd/distro/all"
+	"github.com/SSPanel-NeXT/NeXT-Server/common/mylego"
+	. "github.com/SSPanel-NeXT/NeXT-Server/service/controller"
 )
 
 func TestController(t *testing.T) {

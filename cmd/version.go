@@ -7,15 +7,15 @@ import (
 )
 
 var (
-	version  = "0.2.1"
-	codename = "UIM-Server"
-	intro    = "UIM Server (XrayR Edition)"
+	version  = "0.2.3"
+	codename = "NeXT-Server"
+	intro    = "NeXT-Server (XrayR Edition)"
 )
 
 func init() {
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "version",
-		Short: "Print current version of UIM-Server",
+		Short: "Print current version of NeXT-Server",
 		Run: func(cmd *cobra.Command, args []string) {
 			showVersion()
 		},

@@ -3,7 +3,7 @@ package mylego_test
 import (
 	"testing"
 
-	"github.com/SSPanel-UIM/UIM-Server/common/mylego"
+	"github.com/SSPanel-NeXT/NeXT-Server/common/mylego"
 )
 
 func TestLegoClient(t *testing.T) {

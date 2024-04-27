@@ -1,6 +1,6 @@
 package panel
 
-import "github.com/SSPanel-UIM/UIM-Server/service/controller"
+import "github.com/SSPanel-NeXT/NeXT-Server/service/controller"
 
 func getDefaultLogConfig() *LogConfig {
 	return &LogConfig{

@@ -6,7 +6,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/SSPanel-UIM/UIM-Server/app/mydispatcher"
+	"github.com/SSPanel-NeXT/NeXT-Server/app/mydispatcher"
 
 	"dario.cat/mergo"
 	"github.com/r3labs/diff/v2"
@@ -16,11 +16,11 @@ import (
 	"github.com/xtls/xray-core/core"
 	"github.com/xtls/xray-core/infra/conf"
 
-	"github.com/SSPanel-UIM/UIM-Server/api"
-	"github.com/SSPanel-UIM/UIM-Server/api/sspanel"
-	_ "github.com/SSPanel-UIM/UIM-Server/cmd/distro/all"
-	"github.com/SSPanel-UIM/UIM-Server/service"
-	"github.com/SSPanel-UIM/UIM-Server/service/controller"
+	"github.com/SSPanel-NeXT/NeXT-Server/api"
+	"github.com/SSPanel-NeXT/NeXT-Server/api/sspanel"
+	_ "github.com/SSPanel-NeXT/NeXT-Server/cmd/distro/all"
+	"github.com/SSPanel-NeXT/NeXT-Server/service"
+	"github.com/SSPanel-NeXT/NeXT-Server/service/controller"
 )
 
 // Panel Structure

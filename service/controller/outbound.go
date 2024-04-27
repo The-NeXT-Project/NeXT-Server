@@ -8,7 +8,7 @@ import (
 	"github.com/xtls/xray-core/core"
 	"github.com/xtls/xray-core/infra/conf"
 
-	"github.com/SSPanel-UIM/UIM-Server/api"
+	"github.com/SSPanel-NeXT/NeXT-Server/api"
 )
 
 // OutboundBuilder build freedom outbound config for addOutbound
@@ -25,6 +25,7 @@ func OutboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.
 
 	// Freedom Protocol setting
 	var domainStrategy = "Asis"
+
 	if config.EnableDNS {
 		if config.DNSType != "" {
 			domainStrategy = config.DNSType
@@ -32,11 +33,13 @@ func OutboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.
 			domainStrategy = "UseIP"
 		}
 	}
+
 	proxySetting := &conf.FreedomConfig{
 		DomainStrategy: domainStrategy,
 	}
 
 	var setting json.RawMessage
+
 	setting, err := json.Marshal(proxySetting)
 	if err != nil {
 		return nil, fmt.Errorf("marshal proxy %s config fialed: %s", nodeInfo.NodeType, err)

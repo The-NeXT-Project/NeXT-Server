@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/SSPanel-UIM/UIM-Server/cmd"
+	"github.com/SSPanel-NeXT/NeXT-Server/cmd"
 )
 
 var enableProfile bool

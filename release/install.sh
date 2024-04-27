@@ -118,7 +118,7 @@ install_uim_server() {
           exit 1
       fi
       echo -e "检测到 uim-server 最新版本：${last_version}，开始安装"
-      wget -q -O /usr/local/uim-server/uim-server-linux.zip https://github.com/SSPanel-UIM/UIM-Server/releases/download/${last_version}/uim-server-linux-${arch}.zip
+      wget -q -O /usr/local/uim-server/uim-server-linux.zip https://github.com/SSPanel-NeXT/NeXT-Server/releases/download/${last_version}/uim-server-linux-${arch}.zip
       if [[ $? -ne 0 ]]; then
           echo -e "下载 uim-server 失败，请确保你的服务器能够下载 Github 的文件"
           exit 1
@@ -129,7 +129,7 @@ install_uim_server() {
       else
 	        last_version="v"$1
 	    fi
-      url="https://github.com/SSPanel-UIM/UIM-Server/releases/download/${last_version}/uim-server-linux-${arch}.zip"
+      url="https://github.com/SSPanel-NeXT/NeXT-Server/releases/download/${last_version}/uim-server-linux-${arch}.zip"
       echo -e "开始安装 uim-server ${last_version}"
       wget -q -O /usr/local/uim-server/uim-server-linux.zip ${url}
       if [[ $? -ne 0 ]]; then
@@ -182,7 +182,7 @@ install_uim_server() {
       cp rulelist /etc/uim-server/
   fi
 
-  curl -o /usr/bin/uim-server -Ls https://github.com/SSPanel-UIM/UIM-Server/raw/main/release/uim-server.sh
+  curl -o /usr/bin/uim-server -Ls https://github.com/SSPanel-NeXT/NeXT-Server/raw/main/release/uim-server.sh
   chmod +x /usr/bin/uim-server
   cd $cur_dir
   rm -f install.sh

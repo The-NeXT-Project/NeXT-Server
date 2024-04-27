@@ -1,10 +1,10 @@
-# UIM Server (XrayR Edition)
+# NeXT-Server (XrayR Edition)
 
-UIM Server (XrayR Edition) is a fork of [XrayR](https://github.com/SSPanel-UIM/UIM-Server) with full WebAPI support & bugfixes.
+NeXT-Server (XrayR Edition) is a fork of XrayR with full WebAPI support & bugfixes.
 
 ## Thanks
 
-* [XrayR](https://github.com/SSPanel-UIM/UIM-Server)
+* [XrayR](https://github.com/XrayR-project/XrayR)
 
 ## Licence
 

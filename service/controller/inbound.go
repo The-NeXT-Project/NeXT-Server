@@ -13,8 +13,8 @@ import (
 	"github.com/xtls/xray-core/core"
 	"github.com/xtls/xray-core/infra/conf"
 
-	"github.com/SSPanel-UIM/UIM-Server/api"
-	"github.com/SSPanel-UIM/UIM-Server/common/mylego"
+	"github.com/SSPanel-NeXT/NeXT-Server/api"
+	"github.com/SSPanel-NeXT/NeXT-Server/common/mylego"
 )
 
 // InboundBuilder build Inbound config for different protocol
@@ -25,7 +25,6 @@ func InboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.I
 		ipAddress := net.ParseAddress(config.ListenIP)
 		inboundDetourConfig.ListenOn = &conf.Address{Address: ipAddress}
 	}
-
 	// Build Port
 	portList := &conf.PortList{
 		Range: []conf.PortRange{{From: nodeInfo.Port, To: nodeInfo.Port}},

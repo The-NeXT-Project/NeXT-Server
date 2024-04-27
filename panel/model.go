@@ -1,8 +1,8 @@
 package panel
 
 import (
-	"github.com/SSPanel-UIM/UIM-Server/api"
-	"github.com/SSPanel-UIM/UIM-Server/service/controller"
+	"github.com/SSPanel-NeXT/NeXT-Server/api"
+	"github.com/SSPanel-NeXT/NeXT-Server/service/controller"
 )
 
 type Config struct {

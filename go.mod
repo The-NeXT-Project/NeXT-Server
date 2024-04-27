@@ -1,4 +1,4 @@
-module github.com/SSPanel-UIM/UIM-Server
+module github.com/SSPanel-NeXT/NeXT-Server
 
 go 1.22
 

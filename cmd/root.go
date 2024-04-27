@@ -15,13 +15,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/SSPanel-UIM/UIM-Server/panel"
+	"github.com/SSPanel-NeXT/NeXT-Server/panel"
 )
 
 var (
 	cfgFile string
 	rootCmd = &cobra.Command{
-		Use: "UIM-Server",
+		Use: "NeXT-Server",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := run(); err != nil {
 				log.Fatal(err)
@@ -32,12 +32,11 @@ var (
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgFile,
-		"config", "c", "", "Config file for UIM-Server.")
+		"config", "c", "", "Config file for NeXT-Server")
 }
 
 func getConfig() *viper.Viper {
 	config := viper.New()
-
 	// Set custom path and name
 	if cfgFile != "" {
 		configName := path.Base(cfgFile)
@@ -47,7 +46,7 @@ func getConfig() *viper.Viper {
 		config.SetConfigName(configNameOnly)
 		config.SetConfigType(strings.TrimPrefix(configFileExt, "."))
 		config.AddConfigPath(configPath)
-		// Set ASSET Path and Config Path for UIM-Server
+		// Set ASSET Path and Config Path
 		os.Setenv("XRAY_LOCATION_ASSET", configPath)
 		os.Setenv("XRAY_LOCATION_CONFIG", configPath)
 	} else {
