@@ -180,7 +180,7 @@ func (c *APIClient) GetNodeInfo() (nodeInfo *api.NodeInfo, err error) {
 	if err != nil {
 		res, _ := json.Marshal(nodeInfoResponse)
 		return nil, fmt.Errorf(
-			"Parse node info failed: %s, \n"+
+			"parse node info failed: %s, \n"+
 				"Error: %s, \nPlease check the doc of custom_config for help:"+
 				" https://wiki.sspanel.org/#/custom-config",
 			string(res), err)
@@ -188,7 +188,7 @@ func (c *APIClient) GetNodeInfo() (nodeInfo *api.NodeInfo, err error) {
 
 	if err != nil {
 		res, _ := json.Marshal(nodeInfoResponse)
-		return nil, fmt.Errorf("Parse node info failed: %s, \nError: %s", string(res), err)
+		return nil, fmt.Errorf("parse node info failed: %s, \nError: %s", string(res), err)
 	}
 
 	return nodeInfo, nil
@@ -241,17 +241,13 @@ func (c *APIClient) ReportNodeOnlineUsers(onlineUserList *[]api.OnlineUser) erro
 
 	for i, user := range *onlineUserList {
 		data[i] = OnlineUser{UID: user.UID, IP: user.IP}
-		if _, ok := reportOnline[user.UID]; ok {
-			reportOnline[user.UID]++
-		} else {
-			reportOnline[user.UID] = 1
-		}
+		reportOnline[user.UID]++ // will start from 1 if key doesn’t exist
 	}
 
 	c.LastReportOnline = reportOnline // Update LastReportOnline
 
 	postData := &PostData{Data: data}
-	path := fmt.Sprintf("/mod_mu/users/aliveip")
+	path := "/mod_mu/users/aliveip"
 
 	res, err := c.client.R().
 		SetQueryParam("node_id", strconv.Itoa(c.NodeID)).
