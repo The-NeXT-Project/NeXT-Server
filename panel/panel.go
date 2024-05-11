@@ -204,7 +204,7 @@ func (p *Panel) Start() {
 	for _, s := range p.Service {
 		err := s.Start()
 		if err != nil {
-			log.Panicf("Panel Start fialed: %s", err)
+			log.Panicf("Panel Start failed: %s", err)
 		}
 	}
 
@@ -221,7 +221,7 @@ func (p *Panel) Close() {
 	for _, s := range p.Service {
 		err := s.Close()
 		if err != nil {
-			log.Panicf("Panel Close fialed: %s", err)
+			log.Panicf("Panel Close failed: %s", err)
 		}
 	}
 
