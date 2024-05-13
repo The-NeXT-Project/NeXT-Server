@@ -112,7 +112,7 @@ install_uim_server() {
 	cd /usr/local/uim-server/
 
   if  [ $# == 0 ] ;then
-      last_version=$(curl -Ls "https://api.github.com/repos/SSPanel-UIM/UIM-Server/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+      last_version=$(curl -Ls "https://api.github.com/repos/SSPanel-NeXT/NeXT-Server/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
       if [[ ! -n "$last_version" ]]; then
           echo -e "检测 uim-server 版本失败，可能是超出 Github API 限制，请稍后再试，或手动指定 uim-server 版本安装"
           exit 1
@@ -143,7 +143,7 @@ install_uim_server() {
   chmod +x uim-server
   mkdir /etc/uim-server/ -p
   rm /etc/systemd/system/uim-server.service -f
-  file="https://github.com/SSPanel-UIM/mirror/raw/main/uim-server/uim-server.service"
+  file="https://github.com/SSPanel-NeXT/mirror/raw/main/uim-server/uim-server.service"
   wget -q -O /etc/systemd/system/uim-server.service ${file}
   systemctl daemon-reload
   systemctl stop uim-server

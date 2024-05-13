@@ -182,14 +182,14 @@ func (c *APIClient) GetNodeInfo() (nodeInfo *api.NodeInfo, err error) {
 		return nil, fmt.Errorf(
 			"parse node info failed: %s, \n"+
 				"Error: %s, \nPlease check the doc of custom_config for help:"+
-				" https://wiki.sspanel.org/#/custom-config",
+				" https://docs.sspanel.org/docs/configuration/custom-config",
 			string(res), err)
 	}
 
 	return nodeInfo, nil
 }
 
-// GetUserList will pull user form ssPanel
+// GetUserList will pull user form SSPanel
 func (c *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) {
 	path := "/mod_mu/users"
 	res, err := c.client.R().
@@ -236,7 +236,7 @@ func (c *APIClient) ReportNodeOnlineUsers(onlineUserList *[]api.OnlineUser) erro
 
 	for i, user := range *onlineUserList {
 		data[i] = OnlineUser{UID: user.UID, IP: user.IP}
-		reportOnline[user.UID]++ // will start from 1 if key doesn’t exist
+		reportOnline[user.UID]++ // will start from 1 if key doesn't exist
 	}
 
 	c.LastReportOnline = reportOnline // Update LastReportOnline
@@ -288,7 +288,7 @@ func (c *APIClient) ReportUserTraffic(userTraffic *[]api.UserTraffic) error {
 	return nil
 }
 
-// GetNodeRule will pull the audit rule form ssPanel
+// GetNodeRule will pull the audit rule form SSPanel
 func (c *APIClient) GetNodeRule() (*[]api.DetectRule, error) {
 	ruleList := c.LocalRuleList
 	path := "/mod_mu/func/detect_rules"
@@ -392,7 +392,6 @@ func (c *APIClient) ParseUserListResponse(userInfoResponse *[]UserResponse) (*[]
 }
 
 // ParseSSPanelNodeInfo parse the response for the given node info format
-// Only available for SSPanel version >= 2021.11
 func (c *APIClient) ParseSSPanelNodeInfo(nodeInfoResponse *NodeInfoResponse) (*api.NodeInfo, error) {
 	var (
 		speedLimit        uint64 = 0

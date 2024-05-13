@@ -7,9 +7,9 @@ import (
 )
 
 var (
-	version  = "0.2.3"
+	version  = "0.2.4"
 	codename = "NeXT-Server"
-	intro    = "NeXT-Server (XrayR Edition)"
+	intro    = "Next generation proxy server"
 )
 
 func init() {
