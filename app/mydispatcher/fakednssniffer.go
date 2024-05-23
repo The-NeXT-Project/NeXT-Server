@@ -25,21 +25,25 @@ func newFakeDNSSniffer(ctx context.Context) (protocolSnifferWithMetadata, error)
 		errNotInit := newError("FakeDNSEngine is not initialized, but such a sniffer is used").AtError()
 		return protocolSnifferWithMetadata{}, errNotInit
 	}
-	return protocolSnifferWithMetadata{protocolSniffer: func(ctx context.Context, bytes []byte) (SniffResult, error) {
-		Target := session.OutboundFromContext(ctx).Target
-		if Target.Network == net.Network_TCP || Target.Network == net.Network_UDP {
-			domainFromFakeDNS := fakeDNSEngine.GetDomainFromFakeDNS(Target.Address)
-			if domainFromFakeDNS != "" {
-				newError("fake dns got domain: ", domainFromFakeDNS, " for ip: ", Target.Address.String()).WriteToLog(session.ExportIDToError(ctx))
-				return &fakeDNSSniffResult{domainName: domainFromFakeDNS}, nil
-			}
-		}
 
-		if ipAddressInRangeValueI := ctx.Value(ipAddressInRange); ipAddressInRangeValueI != nil {
-			ipAddressInRangeValue := ipAddressInRangeValueI.(*ipAddressInRangeOpt)
-			if fkr0, ok := fakeDNSEngine.(dns.FakeDNSEngineRev0); ok {
-				inPool := fkr0.IsIPInIPPool(Target.Address)
-				ipAddressInRangeValue.addressInRange = &inPool
+	return protocolSnifferWithMetadata{protocolSniffer: func(ctx context.Context, bytes []byte) (SniffResult, error) {
+		outbounds := session.OutboundsFromContext(ctx)
+		if len(outbounds) > 0 {
+			Target := outbounds[0].Target
+			if Target.Network == net.Network_TCP || Target.Network == net.Network_UDP {
+				domainFromFakeDNS := fakeDNSEngine.GetDomainFromFakeDNS(Target.Address)
+				if domainFromFakeDNS != "" {
+					newError("fake dns got domain: ", domainFromFakeDNS, " for ip: ", Target.Address.String()).WriteToLog(session.ExportIDToError(ctx))
+					return &fakeDNSSniffResult{domainName: domainFromFakeDNS}, nil
+				}
+			}
+
+			if ipAddressInRangeValueI := ctx.Value(ipAddressInRange); ipAddressInRangeValueI != nil {
+				ipAddressInRangeValue := ipAddressInRangeValueI.(*ipAddressInRangeOpt)
+				if fkr0, ok := fakeDNSEngine.(dns.FakeDNSEngineRev0); ok {
+					inPool := fkr0.IsIPInIPPool(Target.Address)
+					ipAddressInRangeValue.addressInRange = &inPool
+				}
 			}
 		}
 

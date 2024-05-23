@@ -84,9 +84,11 @@ func (r *cachedReader) ReadMultiBufferTimeout(timeout time.Duration) (buf.MultiB
 
 func (r *cachedReader) Interrupt() {
 	r.Lock()
+
 	if r.cache != nil {
 		r.cache = buf.ReleaseMulti(r.cache)
 	}
+
 	r.Unlock()
 	r.reader.Interrupt()
 }
@@ -106,6 +108,7 @@ type DefaultDispatcher struct {
 func init() {
 	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
 		d := new(DefaultDispatcher)
+
 		if err := core.RequireFeatures(ctx, func(om outbound.Manager, router routing.Router, pm policy.Manager, sm stats.Manager, dc dns.Client) error {
 			core.RequireFeatures(ctx, func(fdns dns.FakeDNSEngine) {
 				d.fdns = fdns
@@ -114,6 +117,7 @@ func init() {
 		}); err != nil {
 			return nil, err
 		}
+
 		return d, nil
 	}))
 }
@@ -127,6 +131,7 @@ func (d *DefaultDispatcher) Init(om outbound.Manager, router routing.Router, pm 
 	d.Limiter = limiter.New()
 	d.RuleManager = rule.New()
 	d.dns = dns
+
 	return nil
 }
 
@@ -209,15 +214,19 @@ func (d *DefaultDispatcher) getLink(ctx context.Context) (*transport.Link, *tran
 
 func (d *DefaultDispatcher) shouldOverride(ctx context.Context, result SniffResult, request session.SniffingRequest, destination net.Destination) bool {
 	domain := result.Domain()
+
 	for _, d := range request.ExcludeForDomain {
 		if strings.ToLower(domain) == d {
 			return false
 		}
 	}
+
 	protocolString := result.Protocol()
+
 	if resComp, ok := result.(SnifferResultComposite); ok {
 		protocolString = resComp.ProtocolForDomainResult()
 	}
+
 	for _, p := range request.OverrideDestinationForProtocol {
 		if strings.HasPrefix(protocolString, p) {
 			return true
@@ -242,10 +251,15 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	if !destination.IsValid() {
 		panic("Dispatcher: Invalid destination.")
 	}
-	ob := &session.Outbound{
-		Target: destination,
+
+	ob := []*session.Outbound{
+		{
+			Target: destination,
+		},
 	}
-	ctx = session.ContextWithOutbound(ctx, ob)
+
+	ctx = session.ContextWithOutbounds(ctx, ob)
+
 	content := session.ContentFromContext(ctx)
 	if content == nil {
 		content = new(session.Content)
@@ -253,18 +267,20 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	}
 
 	sniffingRequest := content.SniffingRequest
-	inbound, outbound, err := d.getLink(ctx)
+
+	inboundLink, outboundLink, err := d.getLink(ctx)
 	if err != nil {
 		return nil, err
 	}
+
 	if !sniffingRequest.Enabled {
-		go d.routedDispatch(ctx, outbound, destination)
+		go d.routedDispatch(ctx, outboundLink, destination)
 	} else {
 		go func() {
 			cReader := &cachedReader{
-				reader: outbound.Reader.(*pipe.Reader),
+				reader: outboundLink.Reader.(*pipe.Reader),
 			}
-			outbound.Reader = cReader
+			outboundLink.Reader = cReader
 			result, err := sniffer(ctx, cReader, sniffingRequest.MetadataOnly, destination.Network)
 			if err == nil {
 				content.Protocol = result.Protocol()
@@ -274,15 +290,16 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 				newError("sniffed domain: ", domain).WriteToLog(session.ExportIDToError(ctx))
 				destination.Address = net.ParseAddress(domain)
 				if sniffingRequest.RouteOnly && result.Protocol() != "fakedns" {
-					ob.RouteTarget = destination
+					ob[0].RouteTarget = destination
 				} else {
-					ob.Target = destination
+					ob[0].Target = destination
 				}
 			}
-			d.routedDispatch(ctx, outbound, destination)
+			d.routedDispatch(ctx, outboundLink, destination)
 		}()
 	}
-	return inbound, nil
+
+	return inboundLink, nil
 }
 
 // DispatchLink implements routing.Dispatcher.
@@ -290,15 +307,21 @@ func (d *DefaultDispatcher) DispatchLink(ctx context.Context, destination net.De
 	if !destination.IsValid() {
 		return newError("Dispatcher: Invalid destination.")
 	}
-	ob := &session.Outbound{
-		Target: destination,
+
+	ob := []*session.Outbound{
+		{
+			Target: destination,
+		},
 	}
-	ctx = session.ContextWithOutbound(ctx, ob)
+
+	ctx = session.ContextWithOutbounds(ctx, ob)
+
 	content := session.ContentFromContext(ctx)
 	if content == nil {
 		content = new(session.Content)
 		ctx = session.ContextWithContent(ctx, content)
 	}
+
 	sniffingRequest := content.SniffingRequest
 	if !sniffingRequest.Enabled {
 		go d.routedDispatch(ctx, outbound, destination)
@@ -317,9 +340,9 @@ func (d *DefaultDispatcher) DispatchLink(ctx context.Context, destination net.De
 				newError("sniffed domain: ", domain).WriteToLog(session.ExportIDToError(ctx))
 				destination.Address = net.ParseAddress(domain)
 				if sniffingRequest.RouteOnly && result.Protocol() != "fakedns" {
-					ob.RouteTarget = destination
+					ob[0].RouteTarget = destination
 				} else {
-					ob.Target = destination
+					ob[0].Target = destination
 				}
 			}
 			d.routedDispatch(ctx, outbound, destination)
@@ -335,10 +358,10 @@ func sniffer(ctx context.Context, cReader *cachedReader, metadataOnly bool, netw
 
 	sniffer := NewSniffer(ctx)
 
-	metaresult, metadataErr := sniffer.SniffMetadata(ctx)
+	sniffResult, metadataErr := sniffer.SniffMetadata(ctx)
 
 	if metadataOnly {
-		return metaresult, metadataErr
+		return sniffResult, metadataErr
 	}
 
 	contentResult, contentErr := func() (SniffResult, error) {
@@ -367,31 +390,32 @@ func sniffer(ctx context.Context, cReader *cachedReader, metadataOnly bool, netw
 		}
 	}()
 	if contentErr != nil && metadataErr == nil {
-		return metaresult, nil
+		return sniffResult, nil
 	}
 	if contentErr == nil && metadataErr == nil {
-		return CompositeResult(metaresult, contentResult), nil
+		return CompositeResult(sniffResult, contentResult), nil
 	}
+
 	return contentResult, contentErr
 }
 
 func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.Link, destination net.Destination) {
-	ob := session.OutboundFromContext(ctx)
+	ob := session.OutboundsFromContext(ctx)
+
 	if hosts, ok := d.dns.(dns.HostsLookup); ok && destination.Address.Family().IsDomain() {
-		proxied := hosts.LookupHosts(ob.Target.String())
+		proxied := hosts.LookupHosts(ob[0].Target.String())
 		if proxied != nil {
-			ro := ob.RouteTarget == destination
+			ro := ob[0].RouteTarget == destination
 			destination.Address = *proxied
 			if ro {
-				ob.RouteTarget = destination
+				ob[0].RouteTarget = destination
 			} else {
-				ob.Target = destination
+				ob[0].Target = destination
 			}
 		}
 	}
 
 	var handler outbound.Handler
-
 	// Check if domain and protocol hit the rule
 	sessionInbound := session.InboundFromContext(ctx)
 	// Whether the inbound connection contains a user
@@ -408,6 +432,7 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.
 	routingLink := routingSession.AsRoutingContext(ctx)
 	inTag := routingLink.GetInboundTag()
 	isPickRoute := 0
+
 	if forcedOutboundTag := session.GetForcedOutboundTagFromContext(ctx); forcedOutboundTag != "" {
 		ctx = session.SetForcedOutboundTagToContext(ctx, "")
 		if h := d.ohm.GetHandler(forcedOutboundTag); h != nil {
