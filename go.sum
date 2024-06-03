@@ -217,8 +217,8 @@ github.com/fsnotify/fsnotify v1.5.1/go.mod h1:T3375wBYaZdLLcVNkcVbzGHY7f1l/uK5T5
 github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nosvA=
 github.com/fsnotify/fsnotify v1.7.0/go.mod h1:40Bi/Hjc2AVfZrqy+aj+yEI+/bRxZnMJyTJwOpGvigM=
 github.com/getkin/kin-openapi v0.87.0/go.mod h1:660oXbgy5JFMKreazJaQTw7o+X00qeSyhcnluiMv+Xg=
-github.com/getsentry/sentry-go v0.27.0 h1:Pv98CIbtB3LkMWmXi4Joa5OOcwbmnX88sF5qbK3r3Ps=
-github.com/getsentry/sentry-go v0.27.0/go.mod h1:lc76E2QywIyW8WuBnwl8Lc4bkmQH4+w1gwTf25trprY=
+github.com/getsentry/sentry-go v0.28.0 h1:7Rqx9M3ythTKy2J6uZLHmc8Sz9OGgIlseuO1iBX/s0M=
+github.com/getsentry/sentry-go v0.28.0/go.mod h1:1fQZ+7l7eeJ3wYi82q5Hg8GqAPgefRq+FP/QhafYVgg=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344 h1:Arcl6UOIS/kgO2nW3A65HN+7CMjSDP/gofXL4CZt1V4=
 github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344/go.mod h1:GIjDIg/heH5DOkXY3YJ/wNhfHsQHoXGjl8G8amsYQ1I=
@@ -565,8 +565,9 @@ github.com/nrdcg/nodion v0.1.0/go.mod h1:inbuh3neCtIWlMPZHtEpe43TmRXxHV6+hk97iCZ
 github.com/nrdcg/porkbun v0.3.0 h1:jnRV7j2zd3hmh+tSDOGetJyy3+WklaMxbs7HtTTmWMs=
 github.com/nrdcg/porkbun v0.3.0/go.mod h1:jh1DKz96jGHW+NCdG3AmTbbnQeBlNUz1KeSgeN/cBVw=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
-github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/nxadm/tail v1.4.8/go.mod h1:+ncqLTQzXmGhMZNUePPaPqPvBxHAIsmXswZKocGu+AU=
+github.com/nxadm/tail v1.4.11 h1:8feyoE3OzPrcshW5/MJ4sGESc5cqmGkGCWlco4l0bqY=
+github.com/nxadm/tail v1.4.11/go.mod h1:OTaG3NK980DZzxbRq6lEuzgU+mug70nY11sMd4JXXHc=
 github.com/nzdjb/go-metaname v1.0.0 h1:sNASlZC1RM3nSudtBTE1a3ZVTDyTpjqI5WXRPrdZ9Hg=
 github.com/nzdjb/go-metaname v1.0.0/go.mod h1:0GR0LshZax1Lz4VrOrfNSE4dGvTp7HGjiemdczXT2H4=
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
