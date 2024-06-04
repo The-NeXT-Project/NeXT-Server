@@ -46,10 +46,10 @@ jobs:
       GOAMD64: ${{ matrix.goamd64 }}
       CGO_ENABLED: 0
     steps:
-      - name: Checkout codebase
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure & show workflow information
+      - name: Generate build information
         id: get_filename
         run: |
           echo "BUILD_TAG: $BUILD_TAG, GOOS: $GOOS, GOARCH: $GOARCH, GOAMD64: $GOAMD64"
@@ -79,61 +79,52 @@ jobs:
       - name: Get project dependencies
         run: go mod download
 
-      - name: Build uim-server
+      - name: Build next-server
         run: |
           mkdir -p build_assets
           if [ $BUILD_TAG != "none" ]; then
-            go build -v -o build_assets/uim-server -trimpath -ldflags "-s -w -buildid=" -tags $BUILD_TAG
+            go build -v -o build_assets/next-server -trimpath -ldflags "-s -w -buildid=" -tags $BUILD_TAG
           else
-            go build -v -o build_assets/uim-server -trimpath -ldflags "-s -w -buildid="
+            go build -v -o build_assets/next-server -trimpath -ldflags "-s -w -buildid="
           fi
 
-      - name: Prepare to release
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 60
-          retry_wait_seconds: 60
-          max_attempts: 5
-          command: |
-            cp ${GITHUB_WORKSPACE}/README.md ./build_assets/README.md
-            cp ${GITHUB_WORKSPACE}/LICENSE ./build_assets/LICENSE
-            cp ${GITHUB_WORKSPACE}/release/config/dns.json ./build_assets/dns.json
-            cp ${GITHUB_WORKSPACE}/release/config/route.json ./build_assets/route.json
-            cp ${GITHUB_WORKSPACE}/release/config/custom_outbound.json ./build_assets/custom_outbound.json
-            cp ${GITHUB_WORKSPACE}/release/config/custom_inbound.json ./build_assets/custom_inbound.json
-            cp ${GITHUB_WORKSPACE}/release/config/rulelist ./build_assets/rulelist
-            cp ${GITHUB_WORKSPACE}/release/config/config.yml.example ./build_assets/config.yml
-            wget -O ./build_assets/geoip.dat https://raw.githubusercontent.com/v2fly/geoip/release/geoip.dat
-            wget -O ./build_assets/geosite.dat https://raw.githubusercontent.com/v2fly/domain-list-community/release/dlc.dat
+      - name: Prepare config files
+        run: |
+          cp ${GITHUB_WORKSPACE}/README.md ./build_assets/README.md
+          cp ${GITHUB_WORKSPACE}/LICENSE ./build_assets/LICENSE
+          cp ${GITHUB_WORKSPACE}/release/config/dns.json ./build_assets/dns.json
+          cp ${GITHUB_WORKSPACE}/release/config/route.json ./build_assets/route.json
+          cp ${GITHUB_WORKSPACE}/release/config/custom_outbound.json ./build_assets/custom_outbound.json
+          cp ${GITHUB_WORKSPACE}/release/config/custom_inbound.json ./build_assets/custom_inbound.json
+          cp ${GITHUB_WORKSPACE}/release/config/rulelist ./build_assets/rulelist
+          cp ${GITHUB_WORKSPACE}/release/config/config.yml.example ./build_assets/config.yml
+          wget -O ./build_assets/geoip.dat https://raw.githubusercontent.com/v2fly/geoip/release/geoip.dat
+          wget -O ./build_assets/geosite.dat https://raw.githubusercontent.com/v2fly/domain-list-community/release/dlc.dat
 
-      - name: Create ZIP archive
-        shell: bash
+      - name: Create zip archive
         run: |
           pushd build_assets || exit 1
           touch -mt $(date +%Y01010000) *
-          zip -9vr ../uim-server-$ASSET_NAME.zip .
+          zip -9vr ../next-server-$ASSET_NAME.zip .
           popd || exit 1
-          FILE=./uim-server-$ASSET_NAME.zip
-          DGST=$FILE.dgst
+          FILE=./next-server-$ASSET_NAME.zip
+          DGST=$FILE.hash.txt
           openssl dgst -sha256    $FILE | sed 's/([^)]*)//g' >>$DGST
           openssl dgst -sha3-256  $FILE | sed 's/([^)]*)//g' >>$DGST
+          mv build_assets next-server-$ASSET_NAME
 
-      - name: Change the name
-        run: |
-          mv build_assets uim-server-$ASSET_NAME
-
-      - name: Upload files to Artifacts
+      - name: Upload files to artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: uim-server-${{ steps.get_filename.outputs.ASSET_NAME }}
+          name: next-server-${{ steps.get_filename.outputs.ASSET_NAME }}
           path: |
-            ./uim-server-${{ steps.get_filename.outputs.ASSET_NAME }}/*
+            ./next-server-${{ steps.get_filename.outputs.ASSET_NAME }}/*
 
-      - name: Upload binaries to release
+      - name: Upload files to release
         uses: svenstaro/upload-release-action@v2
-        if: github.event_name == 'release'
+        if: ${{ github.event_name == 'release' }}
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./uim-server-${{ steps.get_filename.outputs.ASSET_NAME }}.zip*
+          file: ./next-server-${{ steps.get_filename.outputs.ASSET_NAME }}.zip*
           tag: ${{ github.ref }}
           file_glob: true
