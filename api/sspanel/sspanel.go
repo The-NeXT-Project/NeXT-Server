@@ -157,12 +157,14 @@ func (c *APIClient) GetNodeInfo() (nodeInfo *api.NodeInfo, err error) {
 		ForceContentType("application/json").
 		Get(path)
 	// Etag identifier for a specific version of a resource. StatusCode = 304 means no changed
-	if res.StatusCode() == 304 {
-		return nil, errors.New(api.NodeNotModified)
-	}
+	if res != nil {
+		if res.StatusCode() == 304 {
+			return nil, errors.New(api.NodeNotModified)
+		}
 
-	if res.Header().Get("ETag") != "" && res.Header().Get("ETag") != c.eTags["node"] {
-		c.eTags["node"] = res.Header().Get("ETag")
+		if res.Header().Get("ETag") != "" && res.Header().Get("ETag") != c.eTags["node"] {
+			c.eTags["node"] = res.Header().Get("ETag")
+		}
 	}
 
 	response, err := c.parseResponse(res, path, err)
@@ -182,7 +184,7 @@ func (c *APIClient) GetNodeInfo() (nodeInfo *api.NodeInfo, err error) {
 		return nil, fmt.Errorf(
 			"parse node info failed: %s, \n"+
 				"Error: %s, \nPlease check the doc of custom_config for help:"+
-				" https://docs.sspanel.org/docs/configuration/custom-config",
+				" https://nextpanel.dev/docs/configuration/custom-config",
 			string(res), err)
 	}
 
@@ -199,12 +201,14 @@ func (c *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) {
 		ForceContentType("application/json").
 		Get(path)
 	// Etag identifier for a specific version of a resource. StatusCode = 304 means no changed
-	if res.StatusCode() == 304 {
-		return nil, errors.New(api.UserNotModified)
-	}
+	if res != nil {
+		if res.StatusCode() == 304 {
+			return nil, errors.New(api.UserNotModified)
+		}
 
-	if res.Header().Get("ETag") != "" && res.Header().Get("ETag") != c.eTags["users"] {
-		c.eTags["users"] = res.Header().Get("ETag")
+		if res.Header().Get("ETag") != "" && res.Header().Get("ETag") != c.eTags["users"] {
+			c.eTags["users"] = res.Header().Get("ETag")
+		}
 	}
 
 	response, err := c.parseResponse(res, path, err)
@@ -298,14 +302,15 @@ func (c *APIClient) GetNodeRule() (*[]api.DetectRule, error) {
 		SetHeader("If-None-Match", c.eTags["rules"]).
 		ForceContentType("application/json").
 		Get(path)
-
 	// Etag identifier for a specific version of a resource. StatusCode = 304 means no changed
-	if res.StatusCode() == 304 {
-		return nil, errors.New(api.RuleNotModified)
-	}
+	if res != nil {
+		if res.StatusCode() == 304 {
+			return nil, errors.New(api.RuleNotModified)
+		}
 
-	if res.Header().Get("ETag") != "" && res.Header().Get("ETag") != c.eTags["rules"] {
-		c.eTags["rules"] = res.Header().Get("ETag")
+		if res.Header().Get("ETag") != "" && res.Header().Get("ETag") != c.eTags["rules"] {
+			c.eTags["rules"] = res.Header().Get("ETag")
+		}
 	}
 
 	response, err := c.parseResponse(res, path, err)

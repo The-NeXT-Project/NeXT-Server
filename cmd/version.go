@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	version  = "0.3.0"
+	version  = "0.3.1"
 	codename = "NeXT-Server"
 	intro    = "Next generation proxy server"
 )

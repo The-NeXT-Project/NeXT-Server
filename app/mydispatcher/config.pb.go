@@ -141,11 +141,11 @@ func file_app_mydispatcher_config_proto_rawDescGZIP() []byte {
 
 var file_app_mydispatcher_config_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_app_mydispatcher_config_proto_goTypes = []interface{}{
-	(*SessionConfig)(nil), // 0: uimserver.app.mydispatcher.SessionConfig
-	(*Config)(nil),        // 1: uimserver.app.mydispatcher.Config
+	(*SessionConfig)(nil), // 0: nextserver.app.mydispatcher.SessionConfig
+	(*Config)(nil),        // 1: nextserver.app.mydispatcher.Config
 }
 var file_app_mydispatcher_config_proto_depIdxs = []int32{
-	0, // 0: uimserver.app.mydispatcher.Config.settings:type_name -> uimserver.app.mydispatcher.SessionConfig
+	0, // 0: nextserver.app.mydispatcher.Config.settings:type_name -> nextserver.app.mydispatcher.SessionConfig
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
