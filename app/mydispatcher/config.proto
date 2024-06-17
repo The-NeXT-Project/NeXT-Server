@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package uimserver.app.mydispatcher;
+package nextserver.app.mydispatcher;
 option csharp_namespace = "NeXT-Server.App.Mydispatcher";
 option go_package = "github.com/SSPanel-NeXT/NeXT-Server/app/mydispatcher";
 option java_package = "com.next-server.app.mydispatcher";
