@@ -12,18 +12,6 @@
     }
   },
   {
-    "tag": "socks5-warp",
-    "protocol": "socks",
-    "settings": {
-      "servers": [
-        {
-          "address": "127.0.0.1",
-          "port": 1080
-        }
-      ]
-    }
-  },
-  {
     "protocol": "blackhole",
     "tag": "block"
   }
