@@ -1,4 +1,4 @@
-name: Build and Release
+name: Test and Release
 
 on:
   workflow_dispatch:
@@ -21,7 +21,6 @@ on:
     types: [ published ]
 
 jobs:
-
   build:
     strategy:
       matrix:
@@ -37,7 +36,6 @@ jobs:
             goos: linux
             goarch: riscv64
       fail-fast: false
-
     runs-on: ubuntu-latest
     env:
       BUILD_TAG: ${{ matrix.build-tag }}
@@ -48,7 +46,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Generate build information
         id: get_filename
         run: |
@@ -70,15 +67,12 @@ jobs:
               echo "ASSET_NAME=$GOOS-$GOARCH-$BUILD_TAG" >> $GITHUB_ENV
             fi
           fi
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: ^1.22
-
       - name: Get project dependencies
         run: go mod download
-
       - name: Build next-server
         run: |
           mkdir -p build_assets
@@ -87,7 +81,6 @@ jobs:
           else
             go build -v -o build_assets/next-server -trimpath -ldflags "-s -w -buildid="
           fi
-
       - name: Prepare config files
         run: |
           cp ${GITHUB_WORKSPACE}/README.md ./build_assets/README.md
@@ -100,7 +93,6 @@ jobs:
           cp ${GITHUB_WORKSPACE}/release/config/config.yml.example ./build_assets/config.yml
           wget -O ./build_assets/geoip.dat https://raw.githubusercontent.com/v2fly/geoip/release/geoip.dat
           wget -O ./build_assets/geosite.dat https://raw.githubusercontent.com/v2fly/domain-list-community/release/dlc.dat
-
       - name: Create zip archive
         run: |
           pushd build_assets || exit 1
@@ -112,14 +104,12 @@ jobs:
           openssl dgst -sha256    $FILE | sed 's/([^)]*)//g' >>$DGST
           openssl dgst -sha3-256  $FILE | sed 's/([^)]*)//g' >>$DGST
           mv build_assets next-server-$ASSET_NAME
-
       - name: Upload files to artifacts
         uses: actions/upload-artifact@v4
         with:
           name: next-server-${{ steps.get_filename.outputs.ASSET_NAME }}
           path: |
             ./next-server-${{ steps.get_filename.outputs.ASSET_NAME }}/*
-
       - name: Upload files to release
         uses: svenstaro/upload-release-action@v2
         if: ${{ github.event_name == 'release' }}
