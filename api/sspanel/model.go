@@ -13,18 +13,20 @@ type NodeInfoResponse struct {
 }
 
 type CustomConfig struct {
-	OffsetPortNode string          `json:"offset_port_node"`
-	Host           string          `json:"host"`
-	Method         string          `json:"method"`
-	TLS            string          `json:"tls"`
-	Network        string          `json:"network"`
-	Security       string          `json:"security"`
-	Path           string          `json:"path"`
-	VerifyCert     bool            `json:"verify_cert"`
-	Header         json.RawMessage `json:"header"`
-	AllowInsecure  string          `json:"allow_insecure"`
-	ServerKey      string          `json:"server_key"`
-	ServiceName    string          `json:"servicename"`
+	OffsetPortNode       string          `json:"offset_port_node"`
+	Host                 string          `json:"host"`
+	Method               string          `json:"method"`
+	TLS                  string          `json:"tls"`
+	Network              string          `json:"network"`
+	Security             string          `json:"security"`
+	Path                 string          `json:"path"`
+	VerifyCert           bool            `json:"verify_cert"`
+	Header               json.RawMessage `json:"header"`
+	AllowInsecure        string          `json:"allow_insecure"`
+	ServerKey            string          `json:"server_key"`
+	ServiceName          string          `json:"servicename"`
+	MaxUploadSize        int32           `json:"max_upload_size"`
+	MaxConcurrentUploads int32           `json:"max_concurrent_uploads"`
 }
 
 // UserResponse is the response of user

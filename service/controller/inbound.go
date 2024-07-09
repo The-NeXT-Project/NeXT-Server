@@ -108,6 +108,8 @@ func InboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.I
 		return nil, fmt.Errorf("convert TransportProtocol failed: %s", err)
 	}
 
+	hosts := conf.StringList{nodeInfo.Host}
+
 	switch networkType {
 	case "tcp":
 		tcpSetting := &conf.TCPConfig{
@@ -128,8 +130,6 @@ func InboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.I
 
 		streamSetting.WSSettings = wsSettings
 	case "http":
-		hosts := conf.StringList{nodeInfo.Host}
-
 		httpSettings := &conf.HTTPConfig{
 			Host: &hosts,
 			Path: nodeInfo.Path,
@@ -137,14 +137,25 @@ func InboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.I
 
 		streamSetting.HTTPSettings = httpSettings
 	case "httpupgrade":
-		hosts := conf.StringList{nodeInfo.Host}
-
 		httpSettings := &conf.HTTPConfig{
 			Host: &hosts,
 			Path: nodeInfo.Path,
 		}
 
 		streamSetting.HTTPSettings = httpSettings
+	case "splithttp":
+		var headers map[string]string
+		_ = json.Unmarshal(nodeInfo.Header, &headers)
+
+		splitHttpSettings := &conf.SplitHTTPConfig{
+			Host:                 nodeInfo.Host,
+			Path:                 nodeInfo.Path,
+			Headers:              headers,
+			MaxUploadSize:        nodeInfo.MaxUploadSize,
+			MaxConcurrentUploads: nodeInfo.MaxConcurrentUploads,
+		}
+
+		streamSetting.SplitHTTPSettings = splitHttpSettings
 	case "grpc":
 		grpcSettings := &conf.GRPCConfig{
 			ServiceName: nodeInfo.ServiceName,
