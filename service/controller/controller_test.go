@@ -11,11 +11,11 @@ import (
 	"github.com/xtls/xray-core/core"
 	"github.com/xtls/xray-core/infra/conf"
 
-	"github.com/SSPanel-NeXT/NeXT-Server/api"
-	"github.com/SSPanel-NeXT/NeXT-Server/api/sspanel"
-	_ "github.com/SSPanel-NeXT/NeXT-Server/cmd/distro/all"
-	"github.com/SSPanel-NeXT/NeXT-Server/common/mylego"
-	. "github.com/SSPanel-NeXT/NeXT-Server/service/controller"
+	"github.com/The-NeXT-Project/NeXT-Server/api"
+	"github.com/The-NeXT-Project/NeXT-Server/api/sspanel"
+	_ "github.com/The-NeXT-Project/NeXT-Server/cmd/distro/all"
+	"github.com/The-NeXT-Project/NeXT-Server/common/mylego"
+	. "github.com/The-NeXT-Project/NeXT-Server/service/controller"
 )
 
 func TestController(t *testing.T) {

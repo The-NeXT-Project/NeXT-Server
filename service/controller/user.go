@@ -5,7 +5,7 @@ import (
 	"github.com/xtls/xray-core/proxy/shadowsocks_2022"
 	"strings"
 
-	"github.com/SSPanel-NeXT/NeXT-Server/api"
+	"github.com/The-NeXT-Project/NeXT-Server/api"
 	"github.com/xtls/xray-core/common/protocol"
 	"github.com/xtls/xray-core/common/serial"
 	"github.com/xtls/xray-core/infra/conf"

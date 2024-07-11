@@ -15,7 +15,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 
-	"github.com/SSPanel-NeXT/NeXT-Server/api"
+	"github.com/The-NeXT-Project/NeXT-Server/api"
 )
 
 // APIClient create an api client to the panel.

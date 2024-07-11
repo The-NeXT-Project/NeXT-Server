@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"github.com/SSPanel-NeXT/NeXT-Server/common/mylego"
+	"github.com/The-NeXT-Project/NeXT-Server/common/mylego"
 )
 
 type Config struct {

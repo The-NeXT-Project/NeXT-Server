@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/SSPanel-NeXT/NeXT-Server/cmd"
+	"github.com/The-NeXT-Project/NeXT-Server/cmd"
 )
 
 var enableProfile bool

@@ -5,7 +5,7 @@ import (
 	_ "github.com/xtls/xray-core/app/proxyman/inbound"
 	_ "github.com/xtls/xray-core/app/proxyman/outbound"
 	// Required features. Can't remove unless there is replacements.
-	_ "github.com/SSPanel-NeXT/NeXT-Server/app/mydispatcher"
+	_ "github.com/The-NeXT-Project/NeXT-Server/app/mydispatcher"
 	// Default commander and all its services. This is an optional feature.
 	_ "github.com/xtls/xray-core/app/commander"
 	_ "github.com/xtls/xray-core/app/log/command"
