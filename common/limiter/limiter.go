@@ -6,7 +6,7 @@ import (
 	"golang.org/x/time/rate"
 	"sync"
 
-	"github.com/SSPanel-NeXT/NeXT-Server/api"
+	"github.com/The-NeXT-Project/NeXT-Server/api"
 )
 
 type UserInfo struct {

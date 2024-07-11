@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/SSPanel-NeXT/NeXT-Server/api"
-	"github.com/SSPanel-NeXT/NeXT-Server/api/sspanel"
+	"github.com/The-NeXT-Project/NeXT-Server/api"
+	"github.com/The-NeXT-Project/NeXT-Server/api/sspanel"
 )
 
 func CreateClient() api.API {

@@ -1,4 +1,4 @@
-module github.com/SSPanel-NeXT/NeXT-Server
+module github.com/The-NeXT-Project/NeXT-Server
 
 go 1.22
 

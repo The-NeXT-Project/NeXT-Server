@@ -1,8 +1,8 @@
 package panel
 
 import (
-	"github.com/SSPanel-NeXT/NeXT-Server/api"
-	"github.com/SSPanel-NeXT/NeXT-Server/service/controller"
+	"github.com/The-NeXT-Project/NeXT-Server/api"
+	"github.com/The-NeXT-Project/NeXT-Server/service/controller"
 )
 
 type Config struct {
