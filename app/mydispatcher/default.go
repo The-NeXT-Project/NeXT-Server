@@ -26,8 +26,8 @@ import (
 	"github.com/xtls/xray-core/transport"
 	"github.com/xtls/xray-core/transport/pipe"
 
-	"github.com/SSPanel-NeXT/NeXT-Server/common/limiter"
-	"github.com/SSPanel-NeXT/NeXT-Server/common/rule"
+	"github.com/The-NeXT-Project/NeXT-Server/common/limiter"
+	"github.com/The-NeXT-Project/NeXT-Server/common/rule"
 )
 
 var errSniffingTimeout = newError("timeout on sniffing")

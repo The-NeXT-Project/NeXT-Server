@@ -13,8 +13,8 @@ import (
 	"github.com/xtls/xray-core/core"
 	"github.com/xtls/xray-core/infra/conf"
 
-	"github.com/SSPanel-NeXT/NeXT-Server/api"
-	"github.com/SSPanel-NeXT/NeXT-Server/common/mylego"
+	"github.com/The-NeXT-Project/NeXT-Server/api"
+	"github.com/The-NeXT-Project/NeXT-Server/common/mylego"
 )
 
 // InboundBuilder build Inbound config for different protocol
@@ -37,6 +37,7 @@ func InboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.I
 	sniffingConfig := &conf.SniffingConfig{
 		Enabled:      true,
 		DestOverride: &conf.StringList{"http", "tls"},
+		RouteOnly:    true,
 	}
 
 	if config.DisableSniffing {

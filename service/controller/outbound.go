@@ -8,7 +8,7 @@ import (
 	"github.com/xtls/xray-core/core"
 	"github.com/xtls/xray-core/infra/conf"
 
-	"github.com/SSPanel-NeXT/NeXT-Server/api"
+	"github.com/The-NeXT-Project/NeXT-Server/api"
 )
 
 // OutboundBuilder build freedom outbound config for addOutbound

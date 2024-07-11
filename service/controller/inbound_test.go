@@ -3,9 +3,9 @@ package controller_test
 import (
 	"testing"
 
-	"github.com/SSPanel-NeXT/NeXT-Server/api"
-	"github.com/SSPanel-NeXT/NeXT-Server/common/mylego"
-	. "github.com/SSPanel-NeXT/NeXT-Server/service/controller"
+	"github.com/The-NeXT-Project/NeXT-Server/api"
+	"github.com/The-NeXT-Project/NeXT-Server/common/mylego"
+	. "github.com/The-NeXT-Project/NeXT-Server/service/controller"
 )
 
 func TestBuildVmess(t *testing.T) {
