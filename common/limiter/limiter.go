@@ -170,7 +170,6 @@ func (l *Limiter) GetUserBucket(tag string, email string, ip string) (limiter *r
 			return nil, false, false
 		}
 	} else {
-		newError("Get Inbound Limiter information failed").AtDebug().WriteToLog()
 		return nil, false, false
 	}
 }
