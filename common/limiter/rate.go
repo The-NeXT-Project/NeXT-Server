@@ -28,6 +28,6 @@ func (w *Writer) Close() error {
 
 func (w *Writer) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	ctx := context.Background()
-	w.limiter.WaitN(ctx, int(mb.Len()))
+	_ = w.limiter.WaitN(ctx, int(mb.Len()))
 	return w.writer.WriteMultiBuffer(mb)
 }

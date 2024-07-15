@@ -1,6 +1,6 @@
-# NeXT-Server (XrayR Edition)
+# NeXT-Server
 
-NeXT-Server (XrayR Edition) is a fork of XrayR with full WebAPI support & bugfixes.
+Next generation proxy server.
 
 ## Thanks
 
@@ -8,4 +8,4 @@ NeXT-Server (XrayR Edition) is a fork of XrayR with full WebAPI support & bugfix
 
 ## Licence
 
-[Mozilla Public License Version 2.0](https://github.com/sspanel-uim/XrayR/blob/sspanel/LICENSE)
+[Mozilla Public License Version 2.0](./LICENSE)
