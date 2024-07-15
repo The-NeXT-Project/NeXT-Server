@@ -2,7 +2,6 @@
 package rule
 
 import (
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -65,7 +64,6 @@ func (r *Manager) Detect(tag string, destination string, email string) (reject b
 			l := strings.Split(email, "|")
 			uid, err := strconv.Atoi(l[len(l)-1])
 			if err != nil {
-				newError(fmt.Sprintf("Record illegal behavior failed! Cannot find user's uid: %s", email)).AtDebug().WriteToLog()
 				return reject
 			}
 			newSet := mapset.NewSetWith(api.DetectResult{UID: uid, RuleID: hitRuleID})

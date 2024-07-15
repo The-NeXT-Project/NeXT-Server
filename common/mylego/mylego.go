@@ -60,7 +60,7 @@ func (l *LegoCMD) DNSCert() (CertPath string, KeyPath string, err error) {
 
 	// Set Env for DNS configuration
 	for key, value := range l.C.DNSEnv {
-		os.Setenv(strings.ToUpper(key), value)
+		_ = os.Setenv(strings.ToUpper(key), value)
 	}
 
 	// First check if the certificate exists

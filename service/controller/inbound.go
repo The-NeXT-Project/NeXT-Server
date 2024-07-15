@@ -65,7 +65,7 @@ func InboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.I
 		ssSetting := &conf.ShadowsocksServerConfig{}
 		// shadowsocks must have a random password
 		b := make([]byte, 32)
-		rand.Read(b)
+		_, _ = rand.Read(b)
 		ssSetting.Password = hex.EncodeToString(b)
 		ssSetting.NetworkList = &conf.NetworkList{"tcp", "udp"}
 		ssSetting.IVCheck = !config.DisableIVCheck
@@ -78,7 +78,7 @@ func InboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.I
 		ss2022Setting.Password = nodeInfo.ServerKey // shadowsocks2022 shareKey
 		// shadowsocks2022's password == user PSK, thus should a length of string >= 32 and base64 encoder
 		b := make([]byte, 32)
-		rand.Read(b)
+		_, _ = rand.Read(b)
 
 		ss2022Setting.Users = append(ss2022Setting.Users, &conf.ShadowsocksUserConfig{
 			Password: base64.StdEncoding.EncodeToString(b),

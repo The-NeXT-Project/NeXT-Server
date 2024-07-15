@@ -16,9 +16,9 @@ import (
 	"github.com/xtls/xray-core/core"
 	"github.com/xtls/xray-core/infra/conf"
 
+	_ "github.com/The-NeXT-Project/NeXT-Server/all"
 	"github.com/The-NeXT-Project/NeXT-Server/api"
 	"github.com/The-NeXT-Project/NeXT-Server/api/sspanel"
-	_ "github.com/The-NeXT-Project/NeXT-Server/cmd/distro/all"
 	"github.com/The-NeXT-Project/NeXT-Server/service"
 	"github.com/The-NeXT-Project/NeXT-Server/service/controller"
 )

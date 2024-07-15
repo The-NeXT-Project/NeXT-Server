@@ -33,7 +33,6 @@ func newFakeDNSSniffer(ctx context.Context) (protocolSnifferWithMetadata, error)
 			if Target.Network == net.Network_TCP || Target.Network == net.Network_UDP {
 				domainFromFakeDNS := fakeDNSEngine.GetDomainFromFakeDNS(Target.Address)
 				if domainFromFakeDNS != "" {
-					newError("fake dns got domain: ", domainFromFakeDNS, " for ip: ", Target.Address.String()).WriteToLog(session.ExportIDToError(ctx))
 					return &fakeDNSSniffResult{domainName: domainFromFakeDNS}, nil
 				}
 			}
@@ -111,10 +110,8 @@ func newFakeDNSThenOthers(ctx context.Context, fakeDNSSniffer protocolSnifferWit
 					}
 					return nil, common.ErrNoClue
 				}
-				newError("ip address not in fake dns range, return as is").AtDebug().WriteToLog()
 				return nil, common.ErrNoClue
 			}
-			newError("fake dns sniffer did not set address in range option, assume false.").AtWarning().WriteToLog()
 			return nil, common.ErrNoClue
 		},
 		metadataSniffer: false,
