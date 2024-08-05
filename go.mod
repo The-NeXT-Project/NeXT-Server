@@ -8,15 +8,15 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/getsentry/sentry-go v0.28.1
 	github.com/go-acme/lego/v4 v4.17.4
-	github.com/go-resty/resty/v2 v2.13.1
+	github.com/go-resty/resty/v2 v2.14.0
 	github.com/pkg/profile v1.7.0
 	github.com/r3labs/diff/v2 v2.15.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
-	github.com/xtls/xray-core v1.8.21
+	github.com/xtls/xray-core v1.8.23
 	golang.org/x/crypto v0.25.0
 	golang.org/x/net v0.27.0
-	golang.org/x/time v0.5.0
+	golang.org/x/time v0.6.0
 	google.golang.org/protobuf v1.34.2
 )
 

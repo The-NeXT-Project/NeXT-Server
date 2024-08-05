@@ -149,11 +149,9 @@ func InboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.I
 		_ = json.Unmarshal(nodeInfo.Header, &headers)
 
 		splitHttpSettings := &conf.SplitHTTPConfig{
-			Host:                 nodeInfo.Host,
-			Path:                 nodeInfo.Path,
-			Headers:              headers,
-			MaxUploadSize:        nodeInfo.MaxUploadSize,
-			MaxConcurrentUploads: nodeInfo.MaxConcurrentUploads,
+			Host:    nodeInfo.Host,
+			Path:    nodeInfo.Path,
+			Headers: headers,
 		}
 
 		streamSetting.SplitHTTPSettings = splitHttpSettings

@@ -452,21 +452,19 @@ func (c *APIClient) ParseSSPanelNodeInfo(nodeInfoResponse *NodeInfoResponse) (*a
 
 	// Create GeneralNodeInfo
 	nodeInfo := &api.NodeInfo{
-		NodeType:             c.NodeType,
-		NodeID:               c.NodeID,
-		Port:                 port,
-		SpeedLimit:           speedLimit,
-		AlterID:              alterID,
-		TransportProtocol:    transportProtocol,
-		Host:                 nodeConfig.Host,
-		Path:                 nodeConfig.Path,
-		EnableTLS:            enableTLS,
-		CipherMethod:         nodeConfig.Method,
-		ServerKey:            nodeConfig.ServerKey,
-		ServiceName:          nodeConfig.ServiceName,
-		MaxUploadSize:        nodeConfig.MaxUploadSize,
-		MaxConcurrentUploads: nodeConfig.MaxConcurrentUploads,
-		Header:               nodeConfig.Header,
+		NodeType:          c.NodeType,
+		NodeID:            c.NodeID,
+		Port:              port,
+		SpeedLimit:        speedLimit,
+		AlterID:           alterID,
+		TransportProtocol: transportProtocol,
+		Host:              nodeConfig.Host,
+		Path:              nodeConfig.Path,
+		EnableTLS:         enableTLS,
+		CipherMethod:      nodeConfig.Method,
+		ServerKey:         nodeConfig.ServerKey,
+		ServiceName:       nodeConfig.ServiceName,
+		Header:            nodeConfig.Header,
 	}
 
 	return nodeInfo, nil
