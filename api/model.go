@@ -26,23 +26,21 @@ type Config struct {
 }
 
 type NodeInfo struct {
-	NodeType             string // Must be vmess, trojan, shadowsocks and shadowsocks2022
-	NodeID               int
-	Port                 uint32
-	SpeedLimit           uint64 // Bps
-	AlterID              uint16
-	TransportProtocol    string
-	FakeType             string
-	Host                 string
-	Path                 string
-	EnableTLS            bool
-	CipherMethod         string
-	ServerKey            string
-	ServiceName          string
-	MaxUploadSize        int32
-	MaxConcurrentUploads int32
-	Header               json.RawMessage
-	NameServerConfig     []*conf.NameServerConfig
+	NodeType          string // Must be vmess, trojan, shadowsocks and shadowsocks2022
+	NodeID            int
+	Port              uint32
+	SpeedLimit        uint64 // Bps
+	AlterID           uint16
+	TransportProtocol string
+	FakeType          string
+	Host              string
+	Path              string
+	EnableTLS         bool
+	CipherMethod      string
+	ServerKey         string
+	ServiceName       string
+	Header            json.RawMessage
+	NameServerConfig  []*conf.NameServerConfig
 }
 
 type UserInfo struct {
