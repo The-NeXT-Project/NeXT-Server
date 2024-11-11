@@ -8,7 +8,7 @@ require (
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/getsentry/sentry-go v0.29.1
 	github.com/go-acme/lego/v4 v4.19.2
-	github.com/go-resty/resty/v2 v2.15.3
+	github.com/go-resty/resty/v2 v2.16.0
 	github.com/pkg/profile v1.7.0
 	github.com/r3labs/diff/v2 v2.15.1
 	github.com/spf13/cobra v1.8.1
