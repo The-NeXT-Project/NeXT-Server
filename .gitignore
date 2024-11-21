@@ -1,0 +1,11 @@
+# IDEs
+.idea/
+.vscode/
+vendor/
+# Bin
+*.exe
+uim-server*
+next-server*
+# Exclude release script
+!uim-server.sh
+!next-server.sh

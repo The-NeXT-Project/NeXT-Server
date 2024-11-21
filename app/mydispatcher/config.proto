@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package uimserver.app.mydispatcher;
+option csharp_namespace = "NeXT-Server.App.Mydispatcher";
+option go_package = "github.com/SSPanel-NeXT/NeXT-Server/app/mydispatcher";
+option java_package = "com.next-server.app.mydispatcher";
+option java_multiple_files = true;
+
+message SessionConfig {
+  reserved 1;
+}
+
+message Config {
+  SessionConfig settings = 1;
+}
