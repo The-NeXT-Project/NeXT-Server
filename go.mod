@@ -14,8 +14,8 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/xtls/xray-core v1.8.24
-	golang.org/x/crypto v0.32.0
-	golang.org/x/net v0.34.0
+	golang.org/x/crypto v0.33.0
+	golang.org/x/net v0.35.0
 	golang.org/x/time v0.10.0
 	google.golang.org/protobuf v1.36.5
 )
