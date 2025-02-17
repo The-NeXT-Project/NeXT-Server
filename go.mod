@@ -11,7 +11,7 @@ require (
 	github.com/go-resty/resty/v2 v2.16.5
 	github.com/pkg/profile v1.7.0
 	github.com/r3labs/diff/v2 v2.15.1
-	github.com/spf13/cobra v1.8.1
+	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.19.0
 	github.com/xtls/xray-core v1.8.24
 	golang.org/x/crypto v0.32.0
