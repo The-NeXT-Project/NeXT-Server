@@ -7,7 +7,7 @@ require (
 	github.com/deckarep/golang-set v1.8.0
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/getsentry/sentry-go v0.31.1
-	github.com/go-acme/lego/v4 v4.21.0
+	github.com/go-acme/lego/v4 v4.22.2
 	github.com/go-resty/resty/v2 v2.16.5
 	github.com/pkg/profile v1.7.0
 	github.com/r3labs/diff/v2 v2.15.1
@@ -68,7 +68,6 @@ require (
 	github.com/civo/civogo v0.3.11 // indirect
 	github.com/cloudflare/circl v1.4.0 // indirect
 	github.com/cloudflare/cloudflare-go v0.112.0 // indirect
-	github.com/cpu/goacmedns v0.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dgryski/go-metro v0.0.0-20211217172704-adc40b04c140 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
@@ -141,6 +140,7 @@ require (
 	github.com/nrdcg/desec v0.10.0 // indirect
 	github.com/nrdcg/dnspod-go v0.4.0 // indirect
 	github.com/nrdcg/freemyip v0.3.0 // indirect
+	github.com/nrdcg/goacmedns v0.2.0 // indirect
 	github.com/nrdcg/goinwx v0.10.0 // indirect
 	github.com/nrdcg/mailinabox v0.2.0 // indirect
 	github.com/nrdcg/namesilo v0.2.1 // indirect
