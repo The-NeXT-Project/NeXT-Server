@@ -2,10 +2,6 @@
 
 Next generation proxy server.
 
-## Thanks
+## License
 
-* [XrayR](https://github.com/XrayR-project/XrayR)
-
-## Licence
-
-[Mozilla Public License Version 2.0](./LICENSE)
+[GPL-3.0](./LICENSE)
