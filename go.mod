@@ -3,7 +3,7 @@ module github.com/The-NeXT-Project/NeXT-Server
 go 1.24.2
 
 require (
-	dario.cat/mergo v1.0.1
+	dario.cat/mergo v1.0.2
 	github.com/deckarep/golang-set v1.8.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/getsentry/sentry-go v0.32.0
