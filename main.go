@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/getsentry/sentry-go"
-	"github.com/pkg/profile"
 	"log"
 	"os"
 	"time"
+
+	"github.com/getsentry/sentry-go"
+	"github.com/pkg/profile"
 
 	"github.com/The-NeXT-Project/NeXT-Server/cmd"
 )

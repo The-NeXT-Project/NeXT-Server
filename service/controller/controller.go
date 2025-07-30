@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/xtls/xray-core/proxy"
 	"log"
 	"reflect"
 	"time"
+
+	"github.com/xtls/xray-core/proxy"
 
 	"github.com/xtls/xray-core/common/protocol"
 	"github.com/xtls/xray-core/common/task"
@@ -94,7 +95,6 @@ func (c *Controller) Start() error {
 	if err != nil {
 		return err
 	}
-
 	// sync controller userList
 	c.userList = userInfo
 
@@ -102,12 +102,10 @@ func (c *Controller) Start() error {
 	if err != nil {
 		return err
 	}
-
 	// Add Limiter
 	if err := c.AddInboundLimiter(c.Tag, newNodeInfo.SpeedLimit, userInfo); err != nil {
 		log.Print(err)
 	}
-
 	// Add Rule Manager
 	if !c.config.DisableGetRule {
 		if ruleList, err := c.apiClient.GetNodeRule(); err != nil {
@@ -118,7 +116,6 @@ func (c *Controller) Start() error {
 			}
 		}
 	}
-
 	// Init AutoSpeedLimitConfig
 	if c.config.AutoSpeedLimitConfig == nil {
 		c.config.AutoSpeedLimitConfig = &AutoSpeedLimitConfig{0, 0, 0, 0}
@@ -127,7 +124,6 @@ func (c *Controller) Start() error {
 		c.limitedUsers = make(map[api.UserInfo]LimitInfo)
 		c.warnedUsers = make(map[api.UserInfo]int)
 	}
-
 	// Add periodic tasks
 	c.tasks = append(c.tasks,
 		periodicTask{
@@ -143,7 +139,6 @@ func (c *Controller) Start() error {
 				Execute:  c.userInfoMonitor,
 			}},
 	)
-
 	// Check cert service in need
 	if c.nodeInfo.EnableTLS {
 		c.tasks = append(c.tasks, periodicTask{
@@ -153,7 +148,6 @@ func (c *Controller) Start() error {
 				Execute:  c.certMonitor,
 			}})
 	}
-
 	// Start periodic tasks
 	for i := range c.tasks {
 		log.Printf("%s Start %s periodic task", c.logPrefix(), c.tasks[i].tag)
@@ -181,12 +175,11 @@ func (c *Controller) nodeInfoMonitor() (err error) {
 	if time.Since(c.startAt) < time.Duration(c.config.UpdatePeriodic)*time.Second {
 		return nil
 	}
-
 	// First fetch Node Info
 	var nodeInfoChanged = true
 	newNodeInfo, err := c.apiClient.GetNodeInfo()
 	if err != nil {
-		if err.Error() == api.NodeNotModified {
+		if errors.Is(err, api.ErrNodeNotModified) {
 			nodeInfoChanged = false
 			newNodeInfo = c.nodeInfo
 		} else {
@@ -198,20 +191,25 @@ func (c *Controller) nodeInfoMonitor() (err error) {
 	if newNodeInfo.Port == 0 {
 		return errors.New("server port must > 0")
 	}
-
 	// Update User
 	var usersChanged = true
 	newUserInfo, err := c.apiClient.GetUserList()
 	if err != nil {
-		if err.Error() == api.UserNotModified {
+		switch {
+		case errors.Is(err, api.ErrUserNotModified):
 			usersChanged = false
 			newUserInfo = c.userList
-		} else {
+		case errors.Is(err, api.ErrNodeNotFound):
+			log.Panic(err)
+		case errors.Is(err, api.ErrNodeNotEnabled):
+			log.Panic(err)
+		case errors.Is(err, api.ErrNodeOutOfBandwidth):
+			log.Panic(err)
+		default:
 			log.Print(err)
 			return nil
 		}
 	}
-
 	// If nodeInfo changed
 	if nodeInfoChanged {
 		if !reflect.DeepEqual(c.nodeInfo, newNodeInfo) {
@@ -240,11 +238,10 @@ func (c *Controller) nodeInfoMonitor() (err error) {
 			nodeInfoChanged = false
 		}
 	}
-
 	// Check Rule
 	if !c.config.DisableGetRule {
 		if ruleList, err := c.apiClient.GetNodeRule(); err != nil {
-			if err.Error() != api.RuleNotModified {
+			if !errors.Is(err, api.ErrRuleNotModified) {
 				log.Printf("Get rule list filed: %s", err)
 			}
 		} else if len(*ruleList) > 0 {
@@ -260,7 +257,6 @@ func (c *Controller) nodeInfoMonitor() (err error) {
 			log.Print(err)
 			return nil
 		}
-
 		// Add Limiter
 		if err := c.AddInboundLimiter(c.Tag, newNodeInfo.SpeedLimit, newUserInfo); err != nil {
 			log.Print(err)
@@ -374,7 +370,6 @@ func compareUserList(old, new *[]api.UserInfo) (deleted, added []api.UserInfo) {
 	mAll := make(map[api.UserInfo]byte) // 源+目所有元素建索引
 
 	var set []api.UserInfo // 交集
-
 	// 1.源数组建立map
 	for _, v := range *old {
 		mSrc[v] = 0
@@ -446,7 +441,6 @@ func (c *Controller) userInfoMonitor() (err error) {
 			}
 		}
 	}
-
 	// Get User traffic
 	var userTraffic []api.UserTraffic
 	var upCounterList []stats.Counter
@@ -476,6 +470,7 @@ func (c *Controller) userInfoMonitor() (err error) {
 					delete(c.warnedUsers, user)
 				}
 			}
+
 			userTraffic = append(userTraffic, api.UserTraffic{
 				UID:      user.UID,
 				Email:    user.Email,
@@ -512,7 +507,6 @@ func (c *Controller) userInfoMonitor() (err error) {
 			c.resetTraffic(&upCounterList, &downCounterList)
 		}
 	}
-
 	// Report Online info
 	if onlineDevice, err := c.GetOnlineDevice(c.Tag); err != nil {
 		log.Print(err)
@@ -523,7 +517,6 @@ func (c *Controller) userInfoMonitor() (err error) {
 			log.Printf("%s Report %d online users", c.logPrefix(), len(*onlineDevice))
 		}
 	}
-
 	// Report Illegal user
 	if detectResult, err := c.GetDetectResult(c.Tag); err != nil {
 		log.Print(err)
