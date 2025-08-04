@@ -2,8 +2,9 @@ package controller
 
 import (
 	"fmt"
-	"github.com/xtls/xray-core/proxy/shadowsocks_2022"
 	"strings"
+
+	"github.com/xtls/xray-core/proxy/shadowsocks_2022"
 
 	"github.com/The-NeXT-Project/NeXT-Server/api"
 	"github.com/xtls/xray-core/common/protocol"

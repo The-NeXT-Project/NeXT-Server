@@ -100,8 +100,8 @@ jobs:
           popd || exit 1
           FILE=./next-server-$ASSET_NAME.zip
           DGST=$FILE.hash.txt
-          openssl dgst -sha256    $FILE | sed 's/([^)]*)//g' >>$DGST
-          openssl dgst -sha3-256  $FILE | sed 's/([^)]*)//g' >>$DGST
+          openssl dgst -sha256   $FILE | sed 's/([^)]*)//g' >>$DGST
+          openssl dgst -sha3-256 $FILE | sed 's/([^)]*)//g' >>$DGST
           mv build_assets next-server-$ASSET_NAME
       - name: Upload files to artifacts
         uses: actions/upload-artifact@v4
