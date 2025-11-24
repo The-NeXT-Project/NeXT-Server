@@ -45,7 +45,7 @@ jobs:
       CGO_ENABLED: 0
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Generate build information
         id: get_filename
         run: |
