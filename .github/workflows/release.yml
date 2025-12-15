@@ -104,7 +104,7 @@ jobs:
           openssl dgst -sha3-256 $FILE | sed 's/([^)]*)//g' >>$DGST
           mv build_assets next-server-$ASSET_NAME
       - name: Upload files to artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: next-server-${{ steps.get_filename.outputs.ASSET_NAME }}
           path: |
