@@ -3,8 +3,9 @@ package limiter
 
 import (
 	"fmt"
-	"golang.org/x/time/rate"
 	"sync"
+
+	"golang.org/x/time/rate"
 
 	"github.com/The-NeXT-Project/NeXT-Server/api"
 )

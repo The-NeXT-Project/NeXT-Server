@@ -133,14 +133,23 @@ func (c *APIClient) parseResponse(res *resty.Response, path string, err error) (
 		return nil, fmt.Errorf("request %s failed: %s", c.assembleURL(path), err)
 	}
 
-	if res.StatusCode() > 399 {
+	if res.StatusCode() > 299 {
 		body := res.Body()
 		return nil, fmt.Errorf("request %s failed: %s, %v", c.assembleURL(path), string(body), err)
 	}
 
 	response := res.Result().(*Response)
 
-	if response.Ret != 1 {
+	if response.Ret == 0 {
+		switch response.Msg {
+		case "Node not found.":
+			return nil, api.ErrNodeNotFound
+		case "Node is not enabled.":
+			return nil, api.ErrNodeNotEnabled
+		case "Node out of bandwidth.":
+			return nil, api.ErrNodeOutOfBandwidth
+		}
+
 		res, _ := json.Marshal(&response)
 		return nil, fmt.Errorf("ret %s invalid", string(res))
 	}
@@ -148,7 +157,7 @@ func (c *APIClient) parseResponse(res *resty.Response, path string, err error) (
 	return response, nil
 }
 
-// GetNodeInfo will pull NodeInfo Config from ssPanel
+// GetNodeInfo will pull NodeInfo Config from SSPanel
 func (c *APIClient) GetNodeInfo() (nodeInfo *api.NodeInfo, err error) {
 	path := fmt.Sprintf("/mod_mu/nodes/%d/info", c.NodeID)
 	res, err := c.client.R().
@@ -159,7 +168,7 @@ func (c *APIClient) GetNodeInfo() (nodeInfo *api.NodeInfo, err error) {
 	// Etag identifier for a specific version of a resource. StatusCode = 304 means no changed
 	if res != nil {
 		if res.StatusCode() == 304 {
-			return nil, errors.New(api.NodeNotModified)
+			return nil, api.ErrNodeNotModified
 		}
 
 		if res.Header().Get("ETag") != "" && res.Header().Get("ETag") != c.eTags["node"] {
@@ -191,7 +200,7 @@ func (c *APIClient) GetNodeInfo() (nodeInfo *api.NodeInfo, err error) {
 	return nodeInfo, nil
 }
 
-// GetUserList will pull user form SSPanel
+// GetUserList will pull user form WebAPI
 func (c *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) {
 	path := "/mod_mu/users"
 	res, err := c.client.R().
@@ -200,10 +209,11 @@ func (c *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) {
 		SetResult(&Response{}).
 		ForceContentType("application/json").
 		Get(path)
-	// Etag identifier for a specific version of a resource. StatusCode = 304 means no changed
+	// Etag identifier for a specific version of a resource. StatusCode = 304 means no change
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/304
 	if res != nil {
 		if res.StatusCode() == 304 {
-			return nil, errors.New(api.UserNotModified)
+			return nil, api.ErrUserNotModified
 		}
 
 		if res.Header().Get("ETag") != "" && res.Header().Get("ETag") != c.eTags["users"] {
@@ -213,6 +223,8 @@ func (c *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) {
 
 	response, err := c.parseResponse(res, path, err)
 	if err != nil {
+		// Clear users ETag when WebAPI error occurs, or it can't recover
+		c.eTags["users"] = ""
 		return nil, err
 	}
 
@@ -305,7 +317,7 @@ func (c *APIClient) GetNodeRule() (*[]api.DetectRule, error) {
 	// Etag identifier for a specific version of a resource. StatusCode = 304 means no changed
 	if res != nil {
 		if res.StatusCode() == 304 {
-			return nil, errors.New(api.RuleNotModified)
+			return nil, api.ErrRuleNotModified
 		}
 
 		if res.Header().Get("ETag") != "" && res.Header().Get("ETag") != c.eTags["rules"] {
@@ -404,7 +416,6 @@ func (c *APIClient) ParseSSPanelNodeInfo(nodeInfoResponse *NodeInfoResponse) (*a
 		alterID           uint16 = 0
 		transportProtocol string
 	)
-
 	// Check if custom_config is null
 	if len(nodeInfoResponse.CustomConfig) == 0 {
 		return nil, errors.New("custom_config is empty, disable custom config")
@@ -443,13 +454,11 @@ func (c *APIClient) ParseSSPanelNodeInfo(nodeInfoResponse *NodeInfoResponse) (*a
 	case "trojan":
 		enableTLS = true
 		transportProtocol = "tcp"
-
 		// Select transport protocol
 		if nodeConfig.Network != "" {
 			transportProtocol = nodeConfig.Network // try to read transport protocol from config
 		}
 	}
-
 	// Create GeneralNodeInfo
 	nodeInfo := &api.NodeInfo{
 		NodeType:          c.NodeType,

@@ -45,7 +45,7 @@ jobs:
       CGO_ENABLED: 0
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Generate build information
         id: get_filename
         run: |
@@ -68,9 +68,9 @@ jobs:
             fi
           fi
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: ^1.24
+          go-version: ^1.25
       - name: Get project dependencies
         run: go mod download
       - name: Build next-server
@@ -100,8 +100,8 @@ jobs:
           popd || exit 1
           FILE=./next-server-$ASSET_NAME.zip
           DGST=$FILE.hash.txt
-          openssl dgst -sha256    $FILE | sed 's/([^)]*)//g' >>$DGST
-          openssl dgst -sha3-256  $FILE | sed 's/([^)]*)//g' >>$DGST
+          openssl dgst -sha256   $FILE | sed 's/([^)]*)//g' >>$DGST
+          openssl dgst -sha3-256 $FILE | sed 's/([^)]*)//g' >>$DGST
           mv build_assets next-server-$ASSET_NAME
       - name: Upload files to artifacts
         uses: actions/upload-artifact@v4

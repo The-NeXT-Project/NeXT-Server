@@ -2,15 +2,25 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"regexp"
 
 	"github.com/xtls/xray-core/infra/conf"
 )
 
-const (
-	UserNotModified = "users not modified"
-	NodeNotModified = "node not modified"
-	RuleNotModified = "rules not modified"
+var (
+	// ErrUserNotModified is returned when the user list is not modified.
+	ErrUserNotModified = errors.New("users not modified")
+	// ErrNodeNotEnabled is returned when the node is not enabled.
+	ErrNodeNotEnabled = errors.New("node not enabled")
+	// ErrNodeNotFound is returned when the node is not found.
+	ErrNodeNotFound = errors.New("node not found")
+	// ErrNodeOutOfBandwidth is returned when the node is out of bandwidth.
+	ErrNodeOutOfBandwidth = errors.New("node out of bandwidth")
+	// ErrNodeNotModified is returned when the node info is not modified.
+	ErrNodeNotModified = errors.New("node not modified")
+	// ErrRuleNotModified is returned when the rule list is not modified.
+	ErrRuleNotModified = errors.New("rules not modified")
 )
 
 // Config API config
