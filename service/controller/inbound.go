@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	core "github.com/v2fly/v2ray-core/v5"
 	"github.com/v2fly/v2ray-core/v5/common/net"
@@ -56,10 +57,10 @@ func InboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.I
 	switch nodeInfo.NodeType {
 	case "vmess":
 		protocol = "vmess"
-		proxySetting = map[string]any{}
+		proxySetting = &conf.VMessInboundConfig{}
 	case "trojan":
 		protocol = "trojan"
-		proxySetting = map[string]any{}
+		proxySetting = &conf.TrojanServerConfig{}
 	case "shadowsocks":
 		protocol = "shadowsocks"
 		ssSetting := &conf.ShadowsocksServerConfig{}
@@ -81,6 +82,13 @@ func InboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.I
 	setting, err := json.Marshal(proxySetting)
 	if err != nil {
 		return nil, fmt.Errorf("marshal proxy %s config failed: %s", nodeInfo.NodeType, err)
+	}
+
+	if nodeInfo.NodeType == "trojan" {
+		jsonStr := string(setting)
+		jsonStr = strings.ReplaceAll(jsonStr, `"fallback":null,`, "")
+		jsonStr = strings.ReplaceAll(jsonStr, `,"fallback":null`, "")
+		setting = []byte(jsonStr)
 	}
 
 	inboundDetourConfig.Protocol = protocol
