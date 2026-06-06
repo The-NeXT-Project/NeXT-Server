@@ -56,10 +56,10 @@ func InboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.I
 	switch nodeInfo.NodeType {
 	case "vmess":
 		protocol = "vmess"
-		proxySetting = &conf.VMessInboundConfig{}
+		proxySetting = map[string]any{}
 	case "trojan":
 		protocol = "trojan"
-		proxySetting = &conf.TrojanServerConfig{}
+		proxySetting = map[string]any{}
 	case "shadowsocks":
 		protocol = "shadowsocks"
 		ssSetting := &conf.ShadowsocksServerConfig{}
