@@ -564,42 +564,15 @@ func (c *Controller) removeInbound(tag string) error {
 }
 
 func (c *Controller) removeOutbound(tag string) error {
-	err := c.obm.RemoveHandler(context.Background(), tag)
-	return err
+	return core.RemoveOutboundHandler(c.server, tag)
 }
 
 func (c *Controller) addInbound(config *core.InboundHandlerConfig) error {
-	rawHandler, err := core.CreateObject(c.server, config)
-	if err != nil {
-		return err
-	}
-
-	handler, ok := rawHandler.(inbound.Handler)
-	if !ok {
-		return fmt.Errorf("not an InboundHandler: %s", err)
-	}
-	if err := c.ibm.AddHandler(context.Background(), handler); err != nil {
-		return err
-	}
-
-	return nil
+	return core.AddInboundHandler(c.server, config)
 }
 
 func (c *Controller) addOutbound(config *core.OutboundHandlerConfig) error {
-	rawHandler, err := core.CreateObject(c.server, config)
-	if err != nil {
-		return err
-	}
-
-	handler, ok := rawHandler.(outbound.Handler)
-	if !ok {
-		return fmt.Errorf("not an InboundHandler: %s", err)
-	}
-	if err := c.obm.AddHandler(context.Background(), handler); err != nil {
-		return err
-	}
-
-	return nil
+	return core.AddOutboundHandler(c.server, config)
 }
 
 func (c *Controller) addUsers(users []*protocol.User, tag string) error {
