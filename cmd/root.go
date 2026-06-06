@@ -47,6 +47,8 @@ func getConfig() *viper.Viper {
 		config.SetConfigType(strings.TrimPrefix(configFileExt, "."))
 		config.AddConfigPath(configPath)
 		// Set ASSET Path and Config Path
+		_ = os.Setenv("V2RAY_LOCATION_ASSET", configPath)
+		_ = os.Setenv("V2RAY_LOCATION_CONFIG", configPath)
 		_ = os.Setenv("XRAY_LOCATION_ASSET", configPath)
 		_ = os.Setenv("XRAY_LOCATION_CONFIG", configPath)
 	} else {

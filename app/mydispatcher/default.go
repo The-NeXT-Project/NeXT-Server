@@ -1,6 +1,6 @@
 package mydispatcher
 
-//go:generate go run github.com/xtls/xray-core/common/errors/errorgen
+//go:generate go run github.com/v2fly/v2ray-core/v5/common/errors/errorgen
 
 import (
 	"context"
@@ -9,21 +9,21 @@ import (
 	"sync"
 	"time"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/buf"
-	"github.com/xtls/xray-core/common/log"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/dns"
-	"github.com/xtls/xray-core/features/outbound"
-	"github.com/xtls/xray-core/features/policy"
-	"github.com/xtls/xray-core/features/routing"
-	routingSession "github.com/xtls/xray-core/features/routing/session"
-	"github.com/xtls/xray-core/features/stats"
-	"github.com/xtls/xray-core/transport"
-	"github.com/xtls/xray-core/transport/pipe"
+	core "github.com/v2fly/v2ray-core/v5"
+	"github.com/v2fly/v2ray-core/v5/common"
+	"github.com/v2fly/v2ray-core/v5/common/buf"
+	"github.com/v2fly/v2ray-core/v5/common/log"
+	"github.com/v2fly/v2ray-core/v5/common/net"
+	"github.com/v2fly/v2ray-core/v5/common/protocol"
+	"github.com/v2fly/v2ray-core/v5/common/session"
+	"github.com/v2fly/v2ray-core/v5/features/dns"
+	"github.com/v2fly/v2ray-core/v5/features/outbound"
+	"github.com/v2fly/v2ray-core/v5/features/policy"
+	"github.com/v2fly/v2ray-core/v5/features/routing"
+	routingSession "github.com/v2fly/v2ray-core/v5/features/routing/session"
+	"github.com/v2fly/v2ray-core/v5/features/stats"
+	"github.com/v2fly/v2ray-core/v5/transport"
+	"github.com/v2fly/v2ray-core/v5/transport/pipe"
 
 	"github.com/The-NeXT-Project/NeXT-Server/common/limiter"
 	"github.com/The-NeXT-Project/NeXT-Server/common/rule"
@@ -211,14 +211,6 @@ func (d *DefaultDispatcher) getLink(ctx context.Context) (*transport.Link, *tran
 }
 
 func (d *DefaultDispatcher) shouldOverride(ctx context.Context, result SniffResult, request session.SniffingRequest, destination net.Destination) bool {
-	domain := result.Domain()
-
-	for _, d := range request.ExcludeForDomain {
-		if strings.ToLower(domain) == d {
-			return false
-		}
-	}
-
 	protocolString := result.Protocol()
 
 	if resComp, ok := result.(SnifferResultComposite); ok {
@@ -249,13 +241,11 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 		panic("Dispatcher: Invalid destination.")
 	}
 
-	ob := []*session.Outbound{
-		{
-			Target: destination,
-		},
+	ob := &session.Outbound{
+		Target: destination,
 	}
 
-	ctx = session.ContextWithOutbounds(ctx, ob)
+	ctx = session.ContextWithOutbound(ctx, ob)
 
 	content := session.ContentFromContext(ctx)
 	if content == nil {
@@ -285,11 +275,7 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 			if err == nil && d.shouldOverride(ctx, result, sniffingRequest, destination) {
 				domain := result.Domain()
 				destination.Address = net.ParseAddress(domain)
-				if sniffingRequest.RouteOnly && result.Protocol() != "fakedns" {
-					ob[0].RouteTarget = destination
-				} else {
-					ob[0].Target = destination
-				}
+				ob.Target = destination
 			}
 			d.routedDispatch(ctx, outboundLink, destination)
 		}()
@@ -304,13 +290,11 @@ func (d *DefaultDispatcher) DispatchLink(ctx context.Context, destination net.De
 		return newError("Dispatcher: Invalid destination.")
 	}
 
-	ob := []*session.Outbound{
-		{
-			Target: destination,
-		},
+	ob := &session.Outbound{
+		Target: destination,
 	}
 
-	ctx = session.ContextWithOutbounds(ctx, ob)
+	ctx = session.ContextWithOutbound(ctx, ob)
 
 	content := session.ContentFromContext(ctx)
 	if content == nil {
@@ -334,11 +318,7 @@ func (d *DefaultDispatcher) DispatchLink(ctx context.Context, destination net.De
 			if err == nil && d.shouldOverride(ctx, result, sniffingRequest, destination) {
 				domain := result.Domain()
 				destination.Address = net.ParseAddress(domain)
-				if sniffingRequest.RouteOnly && result.Protocol() != "fakedns" {
-					ob[0].RouteTarget = destination
-				} else {
-					ob[0].Target = destination
-				}
+				ob.Target = destination
 			}
 			d.routedDispatch(ctx, outbound, destination)
 		}()
@@ -395,21 +375,6 @@ func sniffer(ctx context.Context, cReader *cachedReader, metadataOnly bool, netw
 }
 
 func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.Link, destination net.Destination) {
-	ob := session.OutboundsFromContext(ctx)
-
-	if hosts, ok := d.dns.(dns.HostsLookup); ok && destination.Address.Family().IsDomain() {
-		proxied := hosts.LookupHosts(ob[0].Target.String())
-		if proxied != nil {
-			ro := ob[0].RouteTarget == destination
-			destination.Address = *proxied
-			if ro {
-				ob[0].RouteTarget = destination
-			} else {
-				ob[0].Target = destination
-			}
-		}
-	}
-
 	var handler outbound.Handler
 	// Check if domain and protocol hit the rule
 	sessionInbound := session.InboundFromContext(ctx)

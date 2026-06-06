@@ -6,15 +6,20 @@ import (
 	"os"
 	"sync"
 
+	"google.golang.org/protobuf/types/known/anypb"
+
 	"github.com/The-NeXT-Project/NeXT-Server/app/mydispatcher"
 
 	"dario.cat/mergo"
 	"github.com/r3labs/diff/v2"
-	"github.com/xtls/xray-core/app/proxyman"
-	"github.com/xtls/xray-core/app/stats"
-	"github.com/xtls/xray-core/common/serial"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/infra/conf"
+	core "github.com/v2fly/v2ray-core/v5"
+	"github.com/v2fly/v2ray-core/v5/app/proxyman"
+	"github.com/v2fly/v2ray-core/v5/app/stats"
+	"github.com/v2fly/v2ray-core/v5/common/serial"
+	dnsconfig "github.com/v2fly/v2ray-core/v5/infra/conf/synthetic/dns"
+	logconfig "github.com/v2fly/v2ray-core/v5/infra/conf/synthetic/log"
+	routerconfig "github.com/v2fly/v2ray-core/v5/infra/conf/synthetic/router"
+	conf "github.com/v2fly/v2ray-core/v5/infra/conf/v4"
 
 	_ "github.com/The-NeXT-Project/NeXT-Server/all"
 	"github.com/The-NeXT-Project/NeXT-Server/api"
@@ -39,7 +44,7 @@ func New(panelConfig *Config) *Panel {
 
 func (p *Panel) loadCore(panelConfig *Config) *core.Instance {
 	// Log Config
-	coreLogConfig := &conf.LogConfig{}
+	coreLogConfig := &logconfig.LogConfig{}
 
 	logConfig := getDefaultLogConfig()
 
@@ -53,7 +58,7 @@ func (p *Panel) loadCore(panelConfig *Config) *core.Instance {
 	coreLogConfig.AccessLog = logConfig.AccessPath
 	coreLogConfig.ErrorLog = logConfig.ErrorPath
 	// DNS config
-	coreDnsConfig := &conf.DNSConfig{}
+	coreDnsConfig := &dnsconfig.DNSConfig{}
 
 	if panelConfig.DnsConfigPath != "" {
 		if data, err := os.ReadFile(panelConfig.DnsConfigPath); err != nil {
@@ -71,7 +76,7 @@ func (p *Panel) loadCore(panelConfig *Config) *core.Instance {
 	}
 
 	// Routing config
-	coreRouterConfig := &conf.RouterConfig{}
+	coreRouterConfig := &routerconfig.RouterConfig{}
 
 	if panelConfig.RouteConfigPath != "" {
 		if data, err := os.ReadFile(panelConfig.RouteConfigPath); err != nil {
@@ -136,9 +141,8 @@ func (p *Panel) loadCore(panelConfig *Config) *core.Instance {
 	corePolicyConfig := &conf.PolicyConfig{}
 	corePolicyConfig.Levels = map[uint32]*conf.Policy{0: levelPolicyConfig}
 	policyConfig, _ := corePolicyConfig.Build()
-	// Build Core Config
 	config := &core.Config{
-		App: []*serial.TypedMessage{
+		App: []*anypb.Any{
 			serial.ToTypedMessage(coreLogConfig.Build()),
 			serial.ToTypedMessage(&mydispatcher.Config{}),
 			serial.ToTypedMessage(&stats.Config{}),
@@ -157,7 +161,7 @@ func (p *Panel) loadCore(panelConfig *Config) *core.Instance {
 		log.Panicf("failed to create instance: %s", err)
 	}
 
-	log.Printf("Xray Core Version: %s", core.Version())
+	log.Printf("V2Ray Core Version: %s", core.Version())
 
 	return server
 }

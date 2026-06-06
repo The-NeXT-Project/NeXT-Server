@@ -8,15 +8,15 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/xtls/xray-core/proxy"
+	core "github.com/v2fly/v2ray-core/v5"
+	"github.com/v2fly/v2ray-core/v5/proxy"
 
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/task"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/inbound"
-	"github.com/xtls/xray-core/features/outbound"
-	"github.com/xtls/xray-core/features/routing"
-	"github.com/xtls/xray-core/features/stats"
+	"github.com/v2fly/v2ray-core/v5/common/protocol"
+	"github.com/v2fly/v2ray-core/v5/common/task"
+	"github.com/v2fly/v2ray-core/v5/features/inbound"
+	"github.com/v2fly/v2ray-core/v5/features/outbound"
+	"github.com/v2fly/v2ray-core/v5/features/routing"
+	"github.com/v2fly/v2ray-core/v5/features/stats"
 
 	"github.com/The-NeXT-Project/NeXT-Server/api"
 	"github.com/The-NeXT-Project/NeXT-Server/app/mydispatcher"
@@ -349,7 +349,7 @@ func (c *Controller) addNewUser(userInfo *[]api.UserInfo, nodeInfo *api.NodeInfo
 	case "shadowsocks":
 		users = c.buildSSUser(userInfo)
 	case "shadowsocks2022":
-		users = c.buildSS2022User(userInfo)
+		return fmt.Errorf("shadowsocks2022 is not supported by v2ray-core v5")
 	default:
 		return fmt.Errorf("unsupported node type: %s", nodeInfo.NodeType)
 	}

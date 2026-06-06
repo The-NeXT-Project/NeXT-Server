@@ -5,7 +5,7 @@ import (
 	"errors"
 	"regexp"
 
-	"github.com/xtls/xray-core/infra/conf"
+	dns "github.com/v2fly/v2ray-core/v5/infra/conf/synthetic/dns"
 )
 
 var (
@@ -36,7 +36,7 @@ type Config struct {
 }
 
 type NodeInfo struct {
-	NodeType          string // Must be vmess, trojan, shadowsocks and shadowsocks2022
+	NodeType          string // Must be vmess, trojan, and shadowsocks
 	NodeID            int
 	Port              uint32
 	SpeedLimit        uint64 // Bps
@@ -50,7 +50,7 @@ type NodeInfo struct {
 	ServerKey         string
 	ServiceName       string
 	Header            json.RawMessage
-	NameServerConfig  []*conf.NameServerConfig
+	NameServerConfig  []*dns.NameServerConfig
 }
 
 type UserInfo struct {

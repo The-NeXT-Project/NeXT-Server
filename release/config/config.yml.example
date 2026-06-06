@@ -18,7 +18,7 @@ Nodes:
       ApiHost: "https://example.com"
       ApiKey: "xxx"
       NodeID: 1
-      NodeType: vmess # Node type: vmess, trojan, shadowsocks, shadowsocks2022
+      NodeType: vmess # Node type: vmess, trojan, shadowsocks
       Timeout: 30 # Timeout for the api request
       SpeedLimit: 0 # Mbps, Local settings will replace remote settings, 0 means disable
       DeviceLimit: 0 # Local settings will replace remote settings, 0 means disable

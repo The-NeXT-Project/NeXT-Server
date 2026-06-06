@@ -3,15 +3,17 @@ package controller
 
 import (
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"strings"
 
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/infra/conf"
+	core "github.com/v2fly/v2ray-core/v5"
+	"github.com/v2fly/v2ray-core/v5/common/net"
+	"github.com/v2fly/v2ray-core/v5/infra/conf/cfgcommon"
+	"github.com/v2fly/v2ray-core/v5/infra/conf/cfgcommon/sniffer"
+	"github.com/v2fly/v2ray-core/v5/infra/conf/cfgcommon/socketcfg"
+	"github.com/v2fly/v2ray-core/v5/infra/conf/cfgcommon/tlscfg"
+	conf "github.com/v2fly/v2ray-core/v5/infra/conf/v4"
 
 	"github.com/The-NeXT-Project/NeXT-Server/api"
 	"github.com/The-NeXT-Project/NeXT-Server/common/mylego"
@@ -23,21 +25,19 @@ func InboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.I
 	// Build Listen IP address
 	if config.ListenIP != "" {
 		ipAddress := net.ParseAddress(config.ListenIP)
-		inboundDetourConfig.ListenOn = &conf.Address{Address: ipAddress}
+		inboundDetourConfig.ListenOn = &cfgcommon.Address{Address: ipAddress}
 	}
 	// Build Port
-	portList := &conf.PortList{
-		Range: []conf.PortRange{{From: nodeInfo.Port, To: nodeInfo.Port}},
+	inboundDetourConfig.PortRange = &cfgcommon.PortRange{
+		From: nodeInfo.Port,
+		To:   nodeInfo.Port,
 	}
-
-	inboundDetourConfig.PortList = portList
 	// Build Tag
 	inboundDetourConfig.Tag = tag
 	// SniffingConfig
-	sniffingConfig := &conf.SniffingConfig{
+	sniffingConfig := &sniffer.SniffingConfig{
 		Enabled:      true,
-		DestOverride: &conf.StringList{"http", "tls"},
-		RouteOnly:    true,
+		DestOverride: &cfgcommon.StringList{"http", "tls"},
 	}
 
 	if config.DisableSniffing {
@@ -67,30 +67,15 @@ func InboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.I
 		b := make([]byte, 32)
 		_, _ = rand.Read(b)
 		ssSetting.Password = hex.EncodeToString(b)
-		ssSetting.NetworkList = &conf.NetworkList{"tcp", "udp"}
+		ssSetting.NetworkList = &cfgcommon.NetworkList{"tcp", "udp"}
 		ssSetting.IVCheck = !config.DisableIVCheck
 
 		proxySetting = ssSetting
 	case "shadowsocks2022":
-		protocol = "shadowsocks"
-		ss2022Setting := &conf.ShadowsocksServerConfig{}
-		ss2022Setting.Cipher = strings.ToLower(nodeInfo.CipherMethod)
-		ss2022Setting.Password = nodeInfo.ServerKey // shadowsocks2022 shareKey
-		// shadowsocks2022's password == user PSK, thus should a length of string >= 32 and base64 encoder
-		b := make([]byte, 32)
-		_, _ = rand.Read(b)
-
-		ss2022Setting.Users = append(ss2022Setting.Users, &conf.ShadowsocksUserConfig{
-			Password: base64.StdEncoding.EncodeToString(b),
-		})
-
-		ss2022Setting.NetworkList = &conf.NetworkList{"tcp", "udp"}
-		ss2022Setting.IVCheck = !config.DisableIVCheck
-
-		proxySetting = ss2022Setting
+		return nil, fmt.Errorf("shadowsocks2022 inbound is not supported by v2ray-core v5")
 	default:
 		return nil, fmt.Errorf("unsupported node type:"+
-			" %s, Only support: vmess, trojan, shadowsocks and shadowsocks2022", nodeInfo.NodeType)
+			" %s, Only support: vmess, trojan, and shadowsocks", nodeInfo.NodeType)
 	}
 
 	setting, err := json.Marshal(proxySetting)
@@ -109,7 +94,7 @@ func InboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.I
 		return nil, fmt.Errorf("convert TransportProtocol failed: %s", err)
 	}
 
-	hosts := conf.StringList{nodeInfo.Host}
+	hosts := cfgcommon.StringList{nodeInfo.Host}
 
 	switch networkType {
 	case "tcp":
@@ -145,22 +130,13 @@ func InboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.I
 
 		streamSetting.HTTPSettings = httpSettings
 	case "splithttp":
-		var headers map[string]string
-		_ = json.Unmarshal(nodeInfo.Header, &headers)
-
-		splitHttpSettings := &conf.SplitHTTPConfig{
-			Host:    nodeInfo.Host,
-			Path:    nodeInfo.Path,
-			Headers: headers,
-		}
-
-		streamSetting.SplitHTTPSettings = splitHttpSettings
+		return nil, fmt.Errorf("splithttp transport is not supported by v2ray-core v5")
 	case "grpc":
-		grpcSettings := &conf.GRPCConfig{
+		grpcSettings := &conf.GunConfig{
 			ServiceName: nodeInfo.ServiceName,
 		}
 
-		streamSetting.GRPCConfig = grpcSettings
+		streamSetting.GRPCSettings = grpcSettings
 	case "quic":
 		quicSettings := &conf.QUICConfig{
 			Security: "none",
@@ -193,16 +169,14 @@ func InboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.I
 			return nil, err
 		}
 
-		tlsSettings := &conf.TLSConfig{
-			RejectUnknownSNI: config.CertConfig.RejectUnknownSni,
-		}
+		tlsSettings := &tlscfg.TLSConfig{}
 
-		tlsSettings.Certs = append(tlsSettings.Certs, &conf.TLSCertConfig{CertFile: certFile, KeyFile: keyFile, OcspStapling: 3600})
+		tlsSettings.Certs = append(tlsSettings.Certs, &tlscfg.TLSCertConfig{CertFile: certFile, KeyFile: keyFile})
 		streamSetting.TLSSettings = tlsSettings
 	}
 	// Support ProxyProtocol for any transport protocol
 	if networkType != "tcp" && networkType != "ws" && config.EnableProxyProtocol {
-		sockoptConfig := &conf.SocketConfig{
+		sockoptConfig := &socketcfg.SocketConfig{
 			AcceptProxyProtocol: config.EnableProxyProtocol,
 		}
 

@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/xtls/xray-core/proxy/shadowsocks_2022"
-
 	"github.com/The-NeXT-Project/NeXT-Server/api"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/serial"
-	"github.com/xtls/xray-core/infra/conf"
-	"github.com/xtls/xray-core/proxy/shadowsocks"
-	"github.com/xtls/xray-core/proxy/trojan"
+	"github.com/v2fly/v2ray-core/v5/common/protocol"
+	"github.com/v2fly/v2ray-core/v5/common/serial"
+	conf "github.com/v2fly/v2ray-core/v5/infra/conf/v4"
+	"github.com/v2fly/v2ray-core/v5/proxy/shadowsocks"
+	"github.com/v2fly/v2ray-core/v5/proxy/trojan"
 )
 
 func (c *Controller) buildVmessUser(userInfo *[]api.UserInfo) (users []*protocol.User) {
@@ -68,25 +66,7 @@ func (c *Controller) buildSSUser(userInfo *[]api.UserInfo) (users []*protocol.Us
 	return users
 }
 
-func (c *Controller) buildSS2022User(userInfo *[]api.UserInfo) (users []*protocol.User) {
-	users = make([]*protocol.User, len(*userInfo))
 
-	for i, user := range *userInfo {
-		email := c.buildUserTag(&user)
-
-		users[i] = &protocol.User{
-			Level: 0,
-			Email: email,
-			Account: serial.ToTypedMessage(&shadowsocks_2022.User{
-				Key:   user.Passwd,
-				Email: email,
-				Level: 0,
-			}),
-		}
-	}
-
-	return users
-}
 
 func cipherFromString(c string) shadowsocks.CipherType {
 	switch strings.ToLower(c) {

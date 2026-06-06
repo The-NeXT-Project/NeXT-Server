@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/infra/conf"
+	core "github.com/v2fly/v2ray-core/v5"
+	"github.com/v2fly/v2ray-core/v5/common/net"
+	"github.com/v2fly/v2ray-core/v5/infra/conf/cfgcommon"
+	conf "github.com/v2fly/v2ray-core/v5/infra/conf/v4"
 
 	"github.com/The-NeXT-Project/NeXT-Server/api"
 )
@@ -19,8 +20,8 @@ func OutboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.
 
 	// Build Send IP address
 	if config.SendIP != "" {
-		ipAddress := net.ParseAddress(config.SendIP).String()
-		outboundDetourConfig.SendThrough = &ipAddress
+		ipAddress := net.ParseAddress(config.SendIP)
+		outboundDetourConfig.SendThrough = &cfgcommon.Address{Address: ipAddress}
 	}
 
 	// Freedom Protocol setting
