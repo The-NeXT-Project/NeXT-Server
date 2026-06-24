@@ -6,6 +6,8 @@ import (
 	"os"
 	"sync"
 
+	v2rayLog "github.com/v2fly/v2ray-core/v5/common/log"
+
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/The-NeXT-Project/NeXT-Server/app/mydispatcher"
@@ -177,6 +179,8 @@ func (p *Panel) Start() {
 		log.Panicf("Failed to start instance: %s", err)
 	}
 
+	v2rayLog.RegisterHandler(&consoleLogHandler{})
+
 	p.Server = server
 
 	// Load Nodes config
@@ -256,4 +260,22 @@ func parseConnectionConfig(c *ConnectionConfig) (policy *conf.Policy) {
 	}
 
 	return
+}
+
+type consoleLogHandler struct{}
+
+func (h *consoleLogHandler) Handle(msg v2rayLog.Message) {
+	switch m := msg.(type) {
+	case *v2rayLog.GeneralMessage:
+		switch m.Severity {
+		case v2rayLog.Severity_Error, v2rayLog.Severity_Warning:
+			log.Printf("[V2Ray %s] %v", m.Severity, m.Content)
+		case v2rayLog.Severity_Info:
+			log.Printf("[V2Ray %s] %v", m.Severity, m.Content)
+		}
+	case *v2rayLog.AccessMessage:
+		log.Printf("[V2Ray Access] From=%v To=%v Status=%v Reason=%v User=%q Detour=%s", m.From, m.To, m.Status, m.Reason, m.Email, m.Detour)
+	default:
+		log.Printf("[V2Ray Log] %s", msg.String())
+	}
 }

@@ -376,11 +376,24 @@ func sniffer(ctx context.Context, cReader *cachedReader, metadataOnly bool, netw
 
 func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.Link, destination net.Destination) {
 	var handler outbound.Handler
-	// Check if domain and protocol hit the rule
 	sessionInbound := session.InboundFromContext(ctx)
-	// Whether the inbound connection contains a user
-	if sessionInbound.User != nil {
+
+	var clientInfo string
+	if sessionInbound != nil {
+		clientIP := sessionInbound.Source.String()
+		userEmail := "anonymous"
+		if sessionInbound.User != nil {
+			userEmail = sessionInbound.User.Email
+		}
+		clientInfo = "[" + userEmail + " (" + clientIP + ") via " + sessionInbound.Tag + "]"
+	} else {
+		clientInfo = "[unknown client]"
+	}
+
+	// Check if domain and protocol hit the rule
+	if sessionInbound != nil && sessionInbound.User != nil {
 		if d.RuleManager.Detect(sessionInbound.Tag, destination.String(), sessionInbound.User.Email) {
+			newError(clientInfo, " blocked by RuleManager for destination: ", destination).AtWarning().WriteToLog(session.ExportIDToError(ctx))
 			_ = common.Close(link.Writer)
 			_ = common.Interrupt(link.Reader)
 			return
@@ -397,6 +410,7 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.
 			isPickRoute = 1
 			handler = h
 		} else {
+			newError(clientInfo, " forced outbound tag handler not found: ", forcedOutboundTag).AtWarning().WriteToLog(session.ExportIDToError(ctx))
 			_ = common.Close(link.Writer)
 			_ = common.Interrupt(link.Reader)
 			return
@@ -407,7 +421,11 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.
 			if h := d.ohm.GetHandler(outTag); h != nil {
 				isPickRoute = 2
 				handler = h
+			} else {
+				newError(clientInfo, " outbound handler not found for routed tag: ", outTag).AtWarning().WriteToLog(session.ExportIDToError(ctx))
 			}
+		} else {
+			newError(clientInfo, " router failed to pick route to ", destination, ": ", err).AtInfo().WriteToLog(session.ExportIDToError(ctx))
 		}
 	}
 
@@ -421,6 +439,7 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.
 	}
 
 	if handler == nil {
+		newError(clientInfo, " no outbound handler found for destination: ", destination).AtWarning().WriteToLog(session.ExportIDToError(ctx))
 		_ = common.Close(link.Writer)
 		_ = common.Interrupt(link.Reader)
 		return
