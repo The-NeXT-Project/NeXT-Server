@@ -6,7 +6,7 @@ require (
 	dario.cat/mergo v1.0.2
 	github.com/deckarep/golang-set v1.8.0
 	github.com/fsnotify/fsnotify v1.10.1
-	github.com/getsentry/sentry-go v0.47.0
+	github.com/getsentry/sentry-go v0.48.0
 	github.com/go-acme/lego/v4 v4.35.2
 	github.com/go-resty/resty/v2 v2.17.2
 	github.com/pkg/profile v1.7.0
