@@ -1,0 +1,18 @@
+{
+  "log": {
+    "level": "info"
+  },
+  "servers": [
+    {
+      "url": "https://panel.example.com",
+      "key": "<node communication key>",
+      "listen": "::",
+      "tls": {
+        "acme": {
+          "email": "admin@example.com",
+          "data_directory": "/etc/next-server/acme"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+/.idea/
+/vendor/
+.DS_Store
+/*.json
+/next-server
+/dist/
+/license_private.pem

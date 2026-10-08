@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: linux/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        goarch:
+          - amd64
+          - arm64
+          - riscv64
+    env:
+      CGO_ENABLED: 0
+      GOOS: linux
+      GOARCH: ${{ matrix.goarch }}
+      TAG: ${{ github.event.release.tag_name }}
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
+      # Releases are cut from main; refuse to publish a tag that does not live there.
+      - name: Verify tag is on main
+        run: |
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "$(git rev-parse HEAD)" refs/remotes/origin/main; then
+            echo "::error::Tag ${TAG} is not an ancestor of main"
+            exit 1
+          fi
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      # Go applies it to the build below; a release must have it.
+      - name: Check PGO profile
+        run: test -s cmd/next-server/default.pgo || { echo "::error::cmd/next-server/default.pgo is missing, see README (Profiling)"; exit 1; }
+
+      - name: Build
+        run: |
+          go build -v -trimpath \
+            -tags with_acme,with_utls,with_quic \
+            -ldflags "-s -w -buildid= -X github.com/The-NeXT-Project/NeXT-Server/constant.Version=${TAG}" \
+            -o build/next-server \
+            ./cmd/next-server
+
+      - name: Package
+        run: |
+          PKG="next-server-${TAG}-linux-${GOARCH}"
+          echo "PKG=${PKG}" >> "$GITHUB_ENV"
+          mkdir -p "dist/${PKG}"
+          cp build/next-server "dist/${PKG}/"
+          cp LICENSE "dist/${PKG}/"
+          tar -C dist -czf "dist/${PKG}.tar.gz" "${PKG}"
+          (cd dist && sha256sum "${PKG}.tar.gz" > "${PKG}.tar.gz.sha256")
+
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${TAG}" \
+            "dist/${PKG}.tar.gz" \
+            "dist/${PKG}.tar.gz.sha256" \
+            --clobber

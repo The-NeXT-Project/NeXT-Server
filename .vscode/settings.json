@@ -1,0 +1,5 @@
+{
+  // The tags release builds use, so the editor analyses and tests the code
+  // that ships. Add with_sentry,with_pprof to work on those features.
+  "go.buildTags": "with_acme,with_utls,with_quic"
+}

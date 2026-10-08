@@ -1,0 +1,15 @@
+[Unit]
+Description=NeXT Server Service
+After=network.target nss-lookup.target
+
+[Service]
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+ExecStart=/usr/bin/next-server -c /etc/next-server/config.json
+#ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=10s
+LimitNOFILE=infinity
+
+[Install]
+WantedBy=multi-user.target
