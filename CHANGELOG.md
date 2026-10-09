@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.2
+
+### Performance
+
+- The profile-guided optimization profile (`default.pgo`) now includes v1.0.1 profiles from four production nodes under real load, alongside the previous ones. No functional changes.
+
 ## v1.0.1
 
 ### Security
