@@ -46,7 +46,7 @@ func New(options inbound.NodeOptions) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	server.tlsConfig, err = tls.NewServer(options.Context, options.Logger, *options.Config.TLS)
+	server.tlsConfig, err = options.NewTLSServer()
 	if err != nil {
 		return nil, err
 	}

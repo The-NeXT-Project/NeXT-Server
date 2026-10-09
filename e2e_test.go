@@ -202,6 +202,8 @@ func startNextServer(t *testing.T, panelURL string, configure func(*option.Serve
 		Key:          panelKey,
 		PullInterval: badoption.Duration(150 * time.Millisecond),
 		PushInterval: badoption.Duration(150 * time.Millisecond),
+		// Every test destination is on loopback.
+		AllowPrivateDestinations: true,
 	}
 	serverOptions.Listen = &listen
 	if configure != nil {

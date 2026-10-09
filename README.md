@@ -44,7 +44,8 @@ The node listens on `offset_port_node`, falling back to `offset_port_user`, then
       "tls": {},                     // certificate source, see below
       "multiplex": { "enabled": true },  // sing-mux for VMess, Trojan and Shadowsocks
       "dialer": {},                  // sing-box dialer options for outbound traffic
-      "front_proxy": null            // { "type": "socks5"|"socks4"|"socks4a"|"http", "server": "host:port", ... }
+      "front_proxy": null,           // { "type": "socks5"|"socks4"|"socks4a"|"http", "server": "host:port", ... }
+      "allow_private_destinations": false  // let users reach the node itself and its private networks
     }
   ]
 }
@@ -57,7 +58,7 @@ The node listens on `offset_port_node`, falling back to `offset_port_user`, then
 TLS node types (TUIC, Hysteria2, AnyTLS, Trojan, and VMess with `"security": "tls"`) take their certificate from `tls`, which accepts the sing-box inbound TLS fields:
 
 - `certificate_path` and `key_path`: a certificate on disk, reloaded when the files change.
-- `acme`: certificates from Let's Encrypt. Leave `domain` empty to use the node's `host` from the panel (or its address, if that is a domain).
+- `acme`: certificates from Let's Encrypt. Leave `domain` empty to use the node's `host` from the panel (or its address, if that is a domain). A client asking for a name the certificates do not cover gets the one for `default_server_name`, or the first `domain`, so a node behind a CDN (whose panel address is the CDN's name) keeps a renewed certificate: set `domain` to the node's own name.
 - Nothing: a self-signed certificate is generated, and clients connect only with `allow_insecure` set on the node.
 
 The panel's `host` becomes the server name.
@@ -69,6 +70,7 @@ The panel's `host` becomes the server name.
 - Detect rules of type 1 match the destination host, the sniffed domain and the first payload as text. Type 2 rules match the first payload hex encoded. A hit closes the connection and is reported.
 - Traffic that fails to reach the panel is kept and sent with the next report. Shutting down sends a final report.
 - PROXY protocol without `proxy_protocol_trusted` lets any client choose its reported address. Use it only behind a relay, or with a firewall.
+- Users cannot reach the node itself or the networks only it can reach: loopback, private, link-local (a cloud's metadata service among them), CGNAT, multicast and broadcast addresses, given directly or resolved from a domain. A domain keeps its public addresses. UDP packets to such addresses are dropped. `allow_private_destinations` lifts this, e.g. for a node that serves an intranet. With a `front_proxy` that resolves domains itself, only addresses are checked.
 
 ## Build
 

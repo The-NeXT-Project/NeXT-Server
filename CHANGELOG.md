@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.0.1
+
+### Security
+
+- Users can no longer reach the node itself or its private networks through it: loopback, private, link-local (including a cloud's metadata service, such as 169.254.169.254), CGNAT, multicast and broadcast addresses, whether given directly or resolved from a domain. A domain keeps its public addresses, and later UDP packets to such addresses are dropped. v1.0.0 and v0 let them through. Set `allow_private_destinations` for a node that should serve an intranet.
+
+### Fixed
+
+- With `acme`, a client asking for a name the certificates do not cover, such as a CDN sending its own name, gets the node's certificate (`default_server_name`, or the first `domain`) instead of a failed handshake. A node behind a CDN can now renew its certificate: set `tls.acme.domain` to the node's own name instead of copying a fixed certificate.
+
 ## v1.0.0
 
 NeXT-Server is rewritten on [sing-box](https://github.com/SagerNet/sing-box) 1.14, replacing Xray-core. The v0 line lives on the `v0` branch.

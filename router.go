@@ -45,6 +45,12 @@ func (s *Server) RouteConnectionEx(ctx context.Context, conn net.Conn, metadata 
 		s.logger.DebugContext(ctx, err)
 		return
 	}
+	err = s.checkDestination(&metadata)
+	if err != nil {
+		N.CloseOnHandshakeFailure(conn, onClose, err)
+		s.logger.DebugContext(ctx, "[", user.id, "] ", err)
+		return
+	}
 	done := user.open(metadata.Source.Addr)
 	if limiter := user.limiter.Load(); limiter != nil {
 		conn = limiter.Conn(user.ctx, conn)
@@ -79,6 +85,12 @@ func (s *Server) RoutePacketConnectionEx(ctx context.Context, conn N.PacketConn,
 	if err != nil {
 		N.CloseOnHandshakeFailure(conn, onClose, err)
 		s.logger.DebugContext(ctx, err)
+		return
+	}
+	err = s.checkDestination(&metadata)
+	if err != nil {
+		N.CloseOnHandshakeFailure(conn, onClose, err)
+		s.logger.DebugContext(ctx, "[", user.id, "] ", err)
 		return
 	}
 	done := user.open(metadata.Source.Addr)

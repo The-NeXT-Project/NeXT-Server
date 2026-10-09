@@ -95,6 +95,9 @@ func NewServer(ctx context.Context, logger log.ContextLogger, errorReporter repo
 		}
 		server.resolveDomain = options.FrontProxy.ResolveDomain
 	}
+	if !options.AllowPrivateDestinations {
+		server.dialer = &privateFilterDialer{Dialer: server.dialer, passDomains: !server.resolveDomain}
+	}
 	if server.pullInterval <= 0 {
 		server.pullInterval = constant.DefaultPullInterval
 	}

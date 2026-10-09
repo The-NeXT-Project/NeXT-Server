@@ -63,4 +63,10 @@ type ServerOptions struct {
 
 	Dialer     *boxOption.DialerOptions `json:"dialer,omitempty"`
 	FrontProxy *FrontProxyOptions       `json:"front_proxy,omitempty"`
+
+	// AllowPrivateDestinations lets users reach the node itself and the
+	// networks only it can reach: loopback, private, link-local (including a
+	// cloud's metadata service), CGNAT, multicast and broadcast addresses,
+	// whether given directly or resolved from a domain. Refused by default.
+	AllowPrivateDestinations bool `json:"allow_private_destinations,omitempty"`
 }
