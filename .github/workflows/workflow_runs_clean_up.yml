@@ -1,4 +1,4 @@
-name: Delete old workflow runs
+name: Delete Old Workflow Runs
 on:
   workflow_dispatch:
   schedule:
@@ -6,6 +6,7 @@ on:
 
 jobs:
   del_runs:
+    name: Delete Old Workflow Runs
     runs-on: ubuntu-latest
     permissions:
       actions: write
@@ -16,5 +17,5 @@ jobs:
         with:
           token: ${{ github.token }}
           repository: ${{ github.repository }}
-          retain_days: 7
-          keep_minimum_runs: 1
+          retain_days: 3
+          keep_minimum_runs: 0
