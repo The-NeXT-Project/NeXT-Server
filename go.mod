@@ -10,7 +10,7 @@ require (
 	github.com/sagernet/sing v0.9.7-0.20261023115459-5dc452e537bf
 	github.com/sagernet/sing-box v1.14.4
 	github.com/sagernet/sing-quic v0.7.2-0.20261020082049-7e0a5869a5f4
-	github.com/sagernet/sing-shadowsocks v0.2.9-0.20260929204512-65740e0f0e3e
+	github.com/sagernet/sing-shadowsocks v0.2.9
 	github.com/sagernet/sing-vmess v0.2.9-0.20261019223527-a0c58542bd9d
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/net v0.62.0
