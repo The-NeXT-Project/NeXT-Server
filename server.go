@@ -64,7 +64,7 @@ func NewServer(ctx context.Context, logger log.ContextLogger, errorReporter repo
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(ctx)
-	connections := route.NewConnectionManager(connectionLogger{logger})
+	connections := route.NewConnectionManager(ctx, connectionLogger{logger})
 	// The default dialer registers its connections here, so Close can end them.
 	ctx = service.ContextWith[boxAdapter.ConnectionManager](ctx, connections)
 	defaultDialer, err := dialer.NewDefault(ctx, common.PtrValueOrDefault(options.Dialer))
