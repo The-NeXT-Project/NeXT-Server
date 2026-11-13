@@ -4,6 +4,15 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # These modules are pinned to the exact commits sing-box requires and move
+    # only with a sing-box bump. Upstream's release tags sit on side branches,
+    # so a tag that is "newer" by semver can be older code (#168: v0.2.9 would
+    # have dropped sing-shadowsocks' protocol input validation fix).
+    ignore:
+      - dependency-name: "github.com/sagernet/sing"
+      - dependency-name: "github.com/sagernet/sing-quic"
+      - dependency-name: "github.com/sagernet/sing-shadowsocks"
+      - dependency-name: "github.com/sagernet/sing-vmess"
 
   - package-ecosystem: "github-actions"
     directory: "/"
