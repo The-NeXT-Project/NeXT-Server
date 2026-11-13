@@ -49,6 +49,14 @@ type fakePanel struct {
 	traffic     map[int][2]int64
 	online      map[int]map[string]bool
 	detectLogs  map[[2]int]bool
+
+	// reports holds the report IDs recorded per endpoint, as the panel's
+	// node_report_receipt does; duplicates counts the resends it recognized.
+	reports    map[string]bool
+	duplicates int
+	// lostAnswers makes the panel record that many reports and then answer
+	// 504, like a gateway that gave up while the panel committed.
+	lostAnswers int
 }
 
 func newFakePanel(t *testing.T, sort int, customConfig map[string]any, users []map[string]any) (*fakePanel, *httptest.Server) {
@@ -67,6 +75,7 @@ func newFakePanel(t *testing.T, sort int, customConfig map[string]any, users []m
 		traffic:    make(map[int][2]int64),
 		online:     make(map[int]map[string]bool),
 		detectLogs: make(map[[2]int]bool),
+		reports:    make(map[string]bool),
 	}
 	server := httptest.NewServer(panel)
 	t.Cleanup(server.Close)
@@ -97,11 +106,40 @@ func (p *fakePanel) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("ETag", etag)
 		json.NewEncoder(w).Encode(map[string]any{"data": data})
 	}
-	var body map[string][]map[string]any
+	var body struct {
+		ReportID *string          `json:"report_id"`
+		Traffic  []map[string]any `json:"traffic"`
+		Online   []map[string]any `json:"online"`
+		Logs     []map[string]any `json:"logs"`
+	}
 	if r.Method == http.MethodPost {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			fail(http.StatusBadRequest, "invalid_body")
 			return
+		}
+	}
+	// A batch is recorded once per report ID, and a resend is answered as a
+	// duplicate. The traffic and detect log reports must carry one.
+	reply := func(data any) {
+		json.NewEncoder(w).Encode(map[string]any{"data": data})
+	}
+	switch r.URL.Path {
+	case "/api/server/v1/users/traffic", "/api/server/v1/users/detect_logs":
+		if body.ReportID == nil || *body.ReportID == "" {
+			p.t.Errorf("%s without a report_id", r.URL.Path)
+			fail(http.StatusBadRequest, "invalid_body")
+			return
+		}
+		key := r.URL.Path + " " + *body.ReportID
+		if p.reports[key] {
+			p.duplicates++
+			json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"accepted": 0, "skipped": 0, "duplicate": true}})
+			return
+		}
+		p.reports[key] = true
+		if p.lostAnswers > 0 {
+			p.lostAnswers--
+			reply = func(any) { w.WriteHeader(http.StatusGatewayTimeout) }
 		}
 	}
 	userID := func(entry map[string]any) int {
@@ -126,28 +164,28 @@ func (p *fakePanel) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "GET /api/server/v1/detect_rules":
 		withETag(p.rules)
 	case "POST /api/server/v1/users/traffic":
-		for _, entry := range body["traffic"] {
+		for _, entry := range body.Traffic {
 			id := userID(entry)
 			current := p.traffic[id]
 			current[0] += int64(entry["u"].(float64))
 			current[1] += int64(entry["d"].(float64))
 			p.traffic[id] = current
 		}
-		json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"accepted": len(body["traffic"])}})
+		reply(map[string]any{"accepted": len(body.Traffic)})
 	case "POST /api/server/v1/users/online":
-		for _, entry := range body["online"] {
+		for _, entry := range body.Online {
 			id := userID(entry)
 			if p.online[id] == nil {
 				p.online[id] = make(map[string]bool)
 			}
 			p.online[id][entry["ip"].(string)] = true
 		}
-		json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"accepted": len(body["online"])}})
+		json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"accepted": len(body.Online)}})
 	case "POST /api/server/v1/users/detect_logs":
-		for _, entry := range body["logs"] {
+		for _, entry := range body.Logs {
 			p.detectLogs[[2]int{userID(entry), int(entry["rule_id"].(float64))}] = true
 		}
-		json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"accepted": len(body["logs"])}})
+		reply(map[string]any{"accepted": len(body.Logs)})
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
@@ -640,6 +678,32 @@ func TestRemovedUserIsDisconnected(t *testing.T) {
 	// Traffic from before the removal is still reported.
 	eventually(t, 5*time.Second, "traffic of the removed user", func() bool {
 		return panel.read(func(p *fakePanel) bool { return p.traffic[1][0] >= 4 })
+	})
+}
+
+// A batch the panel recorded but whose answer never arrived is sent again
+// under the same report ID and recognized, not merged into the next batch
+// and billed twice.
+func TestLostReportAnswerIsNotBilledTwice(t *testing.T) {
+	tcpEcho, _ := startEcho(t)
+	port := freePort(t)
+	panel, panelServer := newFakePanel(t, 11, map[string]any{"offset_port_node": port}, testUsers())
+	panel.update(func(p *fakePanel) { p.lostAnswers = 1 })
+	startNextServer(t, panelServer.URL, nil)
+	dialer := startClient(t, map[string]any{"type": "vmess", "server": "127.0.0.1", "server_port": port, "uuid": userUUID, "security": "auto"})
+	const size = 64 * 1024
+	echoTCP(t, dialer, M.ParseSocksaddrHostPort("127.0.0.1", uint16(tcpEcho)), size)
+
+	eventually(t, 5*time.Second, "the resent batch to be recognized", func() bool {
+		return panel.read(func(p *fakePanel) bool { return p.duplicates > 0 && p.traffic[1][0] >= size })
+	})
+	// Give any wrongly merged copy a few pushes to show up.
+	time.Sleep(600 * time.Millisecond)
+	panel.read(func(p *fakePanel) bool {
+		if traffic := p.traffic[1]; traffic[0] >= 2*size || traffic[1] >= 2*size {
+			t.Errorf("traffic billed twice: %v for %d bytes each way", traffic, size)
+		}
+		return true
 	})
 }
 

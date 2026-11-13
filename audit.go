@@ -82,6 +82,8 @@ func (a *auditor) collect() []adapter.DetectLog {
 	return logs
 }
 
+// restore puts back hits the panel refused, so they are reported in a later
+// batch.
 func (a *auditor) restore(logs []adapter.DetectLog) {
 	a.access.Lock()
 	for _, log := range logs {

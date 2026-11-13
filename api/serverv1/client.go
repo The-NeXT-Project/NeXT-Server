@@ -28,6 +28,15 @@ type Error struct {
 	Message string
 }
 
+// Refused reports whether the panel refused the request (4xx). The panel
+// authenticates and validates a request before acting on it, and proxies in
+// front of it answer 4xx without passing it on, so nothing was recorded.
+// A 5xx is not a refusal: a gateway timing out while the panel still runs
+// the request, or an error after its commit, leaves the outcome open.
+func (e *Error) Refused() bool {
+	return e.Status >= 400 && e.Status < 500
+}
+
 func (e *Error) Error() string {
 	if e.Code == "" {
 		return "HTTP " + http.StatusText(e.Status)
@@ -159,7 +168,17 @@ func (c *Client) Heartbeat(ctx context.Context, onlineUsers int) error {
 	return c.send(ctx, http.MethodPut, "/heartbeat", map[string]any{"online_user": onlineUsers})
 }
 
-func (c *Client) ReportTraffic(ctx context.Context, items []adapter.UserTraffic) error {
+// withReportID adds report_id to a batch report. The panel records a batch
+// once per ID, so a batch resent after a timeout is not counted again. An
+// empty ID is left out: the panel refuses an empty one.
+func withReportID(body map[string]any, reportID string) map[string]any {
+	if reportID != "" {
+		body["report_id"] = reportID
+	}
+	return body
+}
+
+func (c *Client) ReportTraffic(ctx context.Context, reportID string, items []adapter.UserTraffic) error {
 	type entry struct {
 		UserID int   `json:"user_id"`
 		U      int64 `json:"u"`
@@ -169,7 +188,7 @@ func (c *Client) ReportTraffic(ctx context.Context, items []adapter.UserTraffic)
 	for _, item := range items {
 		entries = append(entries, entry{item.UserID, item.Upload, item.Download})
 	}
-	return c.send(ctx, http.MethodPost, "/users/traffic", map[string]any{"traffic": entries})
+	return c.send(ctx, http.MethodPost, "/users/traffic", withReportID(map[string]any{"traffic": entries}, reportID))
 }
 
 func (c *Client) ReportOnline(ctx context.Context, items []adapter.UserOnline) error {
@@ -184,7 +203,7 @@ func (c *Client) ReportOnline(ctx context.Context, items []adapter.UserOnline) e
 	return c.send(ctx, http.MethodPost, "/users/online", map[string]any{"online": entries})
 }
 
-func (c *Client) ReportDetectLogs(ctx context.Context, items []adapter.DetectLog) error {
+func (c *Client) ReportDetectLogs(ctx context.Context, reportID string, items []adapter.DetectLog) error {
 	type entry struct {
 		UserID int `json:"user_id"`
 		RuleID int `json:"rule_id"`
@@ -193,5 +212,5 @@ func (c *Client) ReportDetectLogs(ctx context.Context, items []adapter.DetectLog
 	for _, item := range items {
 		entries = append(entries, entry{item.UserID, item.RuleID})
 	}
-	return c.send(ctx, http.MethodPost, "/users/detect_logs", map[string]any{"logs": entries})
+	return c.send(ctx, http.MethodPost, "/users/detect_logs", withReportID(map[string]any{"logs": entries}, reportID))
 }

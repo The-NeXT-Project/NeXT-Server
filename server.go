@@ -54,8 +54,10 @@ type Server struct {
 	nodeServer    adapter.NodeServer
 	userList      []adapter.User
 
-	// Owned by the push loop once started.
-	lastPush time.Time
+	// Owned by the push loop once started, and by Close after it.
+	lastPush   time.Time
+	traffic    *reportOutbox[adapter.UserTraffic]
+	detectLogs *reportOutbox[adapter.DetectLog]
 }
 
 func NewServer(ctx context.Context, logger log.ContextLogger, errorReporter reporter.Reporter, options option.ServerOptions) (*Server, error) {
@@ -97,6 +99,20 @@ func NewServer(ctx context.Context, logger log.ContextLogger, errorReporter repo
 	}
 	if !options.AllowPrivateDestinations {
 		server.dialer = &privateFilterDialer{Dialer: server.dialer, passDomains: !server.resolveDomain}
+	}
+	server.traffic = &reportOutbox[adapter.UserTraffic]{
+		name:    "traffic",
+		logger:  logger,
+		collect: server.users.collectTraffic,
+		restore: server.users.restoreTraffic,
+		send:    apiClient.ReportTraffic,
+	}
+	server.detectLogs = &reportOutbox[adapter.DetectLog]{
+		name:    "detect log",
+		logger:  logger,
+		collect: server.auditor.collect,
+		restore: server.auditor.restore,
+		send:    apiClient.ReportDetectLogs,
 	}
 	if server.pullInterval <= 0 {
 		server.pullInterval = constant.DefaultPullInterval
@@ -141,7 +157,9 @@ func (s *Server) Start() error {
 	return nil
 }
 
-// Close stops the node, ends open connections and reports their last traffic.
+// Close stops the node, ends open connections and reports their last traffic
+// and detect logs, after any batch still waiting to be sent again. What does
+// not get through here is lost.
 func (s *Server) Close() error {
 	s.cancel()
 	s.loops.Wait()
@@ -152,10 +170,11 @@ func (s *Server) Close() error {
 	s.connections.CloseAll()
 	ctx, cancel := context.WithTimeout(context.Background(), constant.FinalPushTimeout)
 	defer cancel()
-	if traffic := s.users.collectTraffic(); len(traffic) > 0 {
-		if reportErr := s.api.ReportTraffic(ctx, traffic); reportErr != nil {
-			err = E.Errors(err, E.Cause(reportErr, "report final traffic"))
-		}
+	if reportErr := s.traffic.flush(ctx); reportErr != nil {
+		err = E.Errors(err, E.Cause(reportErr, "report final traffic"))
+	}
+	if reportErr := s.detectLogs.flush(ctx); reportErr != nil {
+		err = E.Errors(err, E.Cause(reportErr, "report final detect logs"))
 	}
 	return err
 }
@@ -306,21 +325,9 @@ func (s *Server) pushOnce() {
 	}
 	s.logError("heartbeat", s.api.Heartbeat(s.ctx, onlineUsers))
 
-	if traffic := s.users.collectTraffic(); len(traffic) > 0 {
-		err := s.api.ReportTraffic(s.ctx, traffic)
-		if err != nil {
-			s.users.restoreTraffic(traffic)
-			s.logError("report traffic", err)
-		}
-	}
+	s.logError("report traffic", s.traffic.flush(s.ctx))
 	if len(online) > 0 {
 		s.logError("report online users", s.api.ReportOnline(s.ctx, online))
 	}
-	if logs := s.auditor.collect(); len(logs) > 0 {
-		err := s.api.ReportDetectLogs(s.ctx, logs)
-		if err != nil {
-			s.auditor.restore(logs)
-			s.logError("report detect logs", err)
-		}
-	}
+	s.logError("report detect logs", s.detectLogs.flush(s.ctx))
 }

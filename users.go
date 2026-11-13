@@ -180,7 +180,9 @@ func (t *userTable) collectTraffic() []adapter.UserTraffic {
 	return items
 }
 
-// restoreTraffic puts back counts that failed to reach the panel.
+// restoreTraffic puts back counts the panel refused, so they are reported in
+// a later batch. Only a refused batch comes back: one that failed without an
+// answer may have been recorded, and is sent again as it is (reportOutbox).
 func (t *userTable) restoreTraffic(items []adapter.UserTraffic) {
 	for _, item := range items {
 		state := t.get(item.UserID)
