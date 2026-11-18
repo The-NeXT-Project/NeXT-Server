@@ -605,7 +605,7 @@ func TestDetectRuleBlocksAndReports(t *testing.T) {
 	panel, panelServer := newFakePanel(t, 11, map[string]any{"offset_port_node": port}, testUsers())
 	panel.rules = []map[string]any{
 		{"id": 7, "name": "blocked", "text": "", "regex": `(^|\.)blocked\.example$`, "type": 1},
-		{"id": 8, "name": "hex", "text": "", "regex": `^deadbeef`, "type": 2},
+		{"id": 8, "name": "hex", "text": "", "regex": `^deadbeef`, "type": 0},
 		{"id": 9, "name": "broken", "text": "", "regex": `(`, "type": 1},
 	}
 	startNextServer(t, panelServer.URL, nil)

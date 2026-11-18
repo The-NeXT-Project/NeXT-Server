@@ -76,3 +76,28 @@ func TestReportsCarryTheReportID(t *testing.T) {
 		t.Error("a failed connection counts as a refusal: ", err)
 	}
 }
+
+// The panel stores rule types as its form offers them: 1 for plaintext, 0
+// for hexadecimal.
+func TestDetectRuleTypes(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"data": [
+			{"id": 1, "name": "plain", "text": "", "regex": "torrent", "type": 1},
+			{"id": 2, "name": "hex", "text": "", "regex": "^1603", "type": 0},
+			{"id": 3, "name": "unknown", "text": "", "regex": "x", "type": 7},
+			{"id": 4, "name": "broken", "text": "", "regex": "(", "type": 1}
+		]}`))
+	}))
+	defer server.Close()
+	client, err := NewClient(option.ServerOptions{URL: server.URL, Key: "key"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rules, err := client.FetchDetectRules(context.Background())
+	if err == nil {
+		t.Error("the unknown type and the broken regex were not reported")
+	}
+	if len(rules) != 2 || rules[0].Type != adapter.DetectRuleTypePlain || rules[1].Type != adapter.DetectRuleTypeHex {
+		t.Fatalf("rules: %+v", rules)
+	}
+}

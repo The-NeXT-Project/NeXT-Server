@@ -91,15 +91,17 @@ type User struct {
 	SpeedLimit uint64
 }
 
-// DetectRuleType selects what a detect rule's regex is matched against.
+// DetectRuleType selects what a detect rule's regex is matched against. The
+// values are the panel's: its form offers "Plaintext packet match" (1) and
+// "Hexadecimal packet match" (0).
 type DetectRuleType int
 
 const (
+	// DetectRuleTypeHex matches the hex encoding of the first payload.
+	DetectRuleTypeHex DetectRuleType = 0
 	// DetectRuleTypePlain matches the destination host, the sniffed domain
 	// and the first payload of the connection as text.
 	DetectRuleTypePlain DetectRuleType = 1
-	// DetectRuleTypeHex matches the hex encoding of the first payload.
-	DetectRuleTypeHex DetectRuleType = 2
 )
 
 type DetectRule struct {

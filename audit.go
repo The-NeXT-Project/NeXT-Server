@@ -51,7 +51,7 @@ func (a *auditor) match(host string, domain string, payload []byte) (adapter.Det
 			if rule.Regexp.MatchString(hexPayload) {
 				return rule, true
 			}
-		default:
+		case adapter.DetectRuleTypePlain:
 			if (host != "" && rule.Regexp.MatchString(host)) ||
 				(domain != "" && domain != host && rule.Regexp.MatchString(domain)) ||
 				(len(payload) > 0 && rule.Regexp.Match(payload)) {
