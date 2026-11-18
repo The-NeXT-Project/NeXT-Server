@@ -7,14 +7,16 @@ import "github.com/sagernet/sing/common/json/badoption"
 type AbuseOptions struct {
 	// Disabled turns every check off.
 	Disabled bool `json:"disabled,omitempty"`
-	// BanDuration is how long a user caught scanning or flooding is refused
-	// on this node, 10 minutes by default.
+	// BanDuration is how long a user caught scanning, flooding or brute
+	// forcing is refused on this node, 10 minutes by default.
 	BanDuration badoption.Duration `json:"ban_duration,omitempty"`
 
-	BitTorrent   AbuseCheckOptions        `json:"bittorrent,omitempty"`
+	// P2P refuses BitTorrent, eDonkey and Kad.
+	P2P          AbuseCheckOptions        `json:"p2p,omitempty"`
 	BlockedPorts AbuseBlockedPortsOptions `json:"blocked_ports,omitempty"`
 	PortScan     AbusePortScanOptions     `json:"port_scan,omitempty"`
 	Flood        AbuseFloodOptions        `json:"flood,omitempty"`
+	BruteForce   AbuseBruteForceOptions   `json:"brute_force,omitempty"`
 }
 
 type AbuseCheckOptions struct {
@@ -27,8 +29,9 @@ type AbuseCheckOptions struct {
 
 type AbuseBlockedPortsOptions struct {
 	AbuseCheckOptions
-	// Ports are refused for TCP and UDP. Left out, it is [25] (SMTP, which
-	// spam goes out on); an empty list refuses nothing.
+	// Ports are refused for TCP and UDP. Left out, they are SMTP (25), which
+	// spam goes out on, and MS-RPC and NetBIOS/SMB (135, 137-139, 445),
+	// which worms spread on; an empty list refuses nothing.
 	Ports []uint16 `json:"ports,omitempty"`
 }
 
@@ -47,5 +50,17 @@ type AbuseFloodOptions struct {
 	AbuseCheckOptions
 	Window                    badoption.Duration `json:"window,omitempty"`
 	Connections               int                `json:"connections,omitempty"`
+	ConnectionsPerDestination int                `json:"connections_per_destination,omitempty"`
+}
+
+// AbuseBruteForceOptions bans a user who reaches too many hosts on login
+// ports, or connects to one host's login port too often, within a window.
+type AbuseBruteForceOptions struct {
+	AbuseCheckOptions
+	// Ports left out are the usual login ports (SSH, Telnet, FTP, RDP, VNC,
+	// WinRM and databases); an empty list checks none.
+	Ports                     []uint16           `json:"ports,omitempty"`
+	Window                    badoption.Duration `json:"window,omitempty"`
+	Hosts                     int                `json:"hosts,omitempty"`
 	ConnectionsPerDestination int                `json:"connections_per_destination,omitempty"`
 }

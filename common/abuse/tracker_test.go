@@ -127,16 +127,43 @@ func TestBanAndNotice(t *testing.T) {
 	if !tracker.Banned(start.Add(59*time.Second)) || tracker.Banned(start.Add(time.Minute)) {
 		t.Fatal("ban does not last exactly a minute")
 	}
-	if !tracker.Notice(BitTorrent, start, time.Minute) {
+	if !tracker.Notice(P2P, start, time.Minute) {
 		t.Fatal("first hit not noticed")
 	}
-	if tracker.Notice(BitTorrent, start.Add(30*time.Second), time.Minute) {
+	if tracker.Notice(P2P, start.Add(30*time.Second), time.Minute) {
 		t.Fatal("repeat within the interval noticed")
 	}
 	if !tracker.Notice(BlockedPort, start.Add(30*time.Second), time.Minute) {
 		t.Fatal("another kind shares the interval")
 	}
-	if !tracker.Notice(BitTorrent, start.Add(time.Minute), time.Minute) {
+	if !tracker.Notice(P2P, start.Add(time.Minute), time.Minute) {
 		t.Fatal("hit after the interval not noticed")
+	}
+}
+
+func TestLogin(t *testing.T) {
+	limits := &Limits{LoginWindow: time.Minute, LoginHosts: 3, LoginConnectionsPerDestination: 4}
+	var tracker Tracker
+	// One host over and over, as Git over SSH does, counts as one host.
+	for i := 0; i < 4; i++ {
+		if _, crossed := tracker.Login(limits, start, destination("github.com", 22)); crossed {
+			t.Fatal("crossed at connection ", i+1)
+		}
+	}
+	verdict, crossed := tracker.Login(limits, start, destination("github.com", 22))
+	if !crossed || verdict.Kind != BruteForce || !strings.Contains(verdict.Reason, "github.com:22") {
+		t.Fatalf("fifth connection to one host: %v %+v", crossed, verdict)
+	}
+	// Ports of one host count as one host; a fourth host crosses.
+	tracker.Login(limits, start, destination("203.0.113.1", 22))
+	tracker.Login(limits, start, destination("203.0.113.1", 3389))
+	tracker.Login(limits, start, destination("203.0.113.2", 22))
+	tracker.Login(limits, start, destination("2001:db8::1", 22))
+	verdict, crossed = tracker.Login(limits, start, destination("203.0.113.4", 3306))
+	if !crossed || !strings.Contains(verdict.Reason, "4 hosts") {
+		t.Fatalf("fourth host: %v %+v", crossed, verdict)
+	}
+	if _, crossed = tracker.Login(limits, start.Add(time.Minute), destination("203.0.113.5", 22)); crossed {
+		t.Fatal("the count carried over into a new window")
 	}
 }

@@ -13,23 +13,26 @@ import (
 type Kind int
 
 const (
-	BitTorrent Kind = iota
+	P2P Kind = iota
 	BlockedPort
 	PortScan
 	Flood
-	kindCount
+	BruteForce
+	Kinds
 )
 
 func (k Kind) String() string {
 	switch k {
-	case BitTorrent:
-		return "BitTorrent"
+	case P2P:
+		return "P2P"
 	case BlockedPort:
 		return "blocked port"
 	case PortScan:
 		return "port scan"
 	case Flood:
 		return "connection flood"
+	case BruteForce:
+		return "brute force"
 	default:
 		return "abuse(" + F.ToString(int(k)) + ")"
 	}
@@ -44,6 +47,11 @@ type Limits struct {
 	FloodWindow               time.Duration
 	Connections               int
 	ConnectionsPerDestination int
+
+	// Login counts apply to connections the caller passes to Login.
+	LoginWindow                    time.Duration
+	LoginHosts                     int
+	LoginConnectionsPerDestination int
 }
 
 func (l *Limits) scans() bool {
@@ -70,11 +78,12 @@ type Verdict struct {
 // ban. Its zero value is ready to use, and it is safe for concurrent use.
 type Tracker struct {
 	bannedUntil atomic.Int64
-	notices     [kindCount]atomic.Int64
+	notices     [Kinds]atomic.Int64
 
 	access sync.Mutex
 	scan   scanWindow
 	flood  floodWindow
+	login  loginWindow
 }
 
 type scanWindow struct {
@@ -83,6 +92,13 @@ type scanWindow struct {
 	hostPorts map[M.Socksaddr]struct{}
 	// ports counts the distinct ports per host, keyed with port 0.
 	ports map[M.Socksaddr]int
+}
+
+type loginWindow struct {
+	start time.Time
+	// hosts holds the hosts reached on login ports, keyed with port 0.
+	hosts        map[M.Socksaddr]struct{}
+	destinations map[M.Socksaddr]int
 }
 
 type floodWindow struct {
@@ -147,6 +163,49 @@ func (t *Tracker) Connect(limits *Limits, now time.Time, destination M.Socksaddr
 	return Verdict{}, false
 }
 
+// Login counts a new connection to a login port (SSH, RDP, databases and the
+// like): reaching many hosts on such ports is credential spraying, and
+// connecting to one over and over is hammering it with passwords.
+func (t *Tracker) Login(limits *Limits, now time.Time, destination M.Socksaddr) (Verdict, bool) {
+	if limits.LoginHosts <= 0 && limits.LoginConnectionsPerDestination <= 0 {
+		return Verdict{}, false
+	}
+	destination = normalize(destination)
+	host := destination
+	host.Port = 0
+	t.access.Lock()
+	defer t.access.Unlock()
+	window := &t.login
+	if now.Sub(window.start) >= limits.LoginWindow {
+		*window = loginWindow{start: now}
+	}
+	if limits.LoginHosts > 0 {
+		if _, seen := window.hosts[host]; !seen && len(window.hosts) < maxKeys {
+			if window.hosts == nil {
+				window.hosts = make(map[M.Socksaddr]struct{})
+			}
+			window.hosts[host] = struct{}{}
+			if len(window.hosts) > limits.LoginHosts {
+				return t.trip(BruteForce, F.ToString(len(window.hosts), " hosts on login ports within ", limits.LoginWindow.String()))
+			}
+		}
+	}
+	if limits.LoginConnectionsPerDestination > 0 {
+		count, seen := window.destinations[destination]
+		if seen || len(window.destinations) < maxKeys {
+			if window.destinations == nil {
+				window.destinations = make(map[M.Socksaddr]int)
+			}
+			count++
+			window.destinations[destination] = count
+		}
+		if count > limits.LoginConnectionsPerDestination {
+			return t.trip(BruteForce, F.ToString(count, " connections to ", destination.String(), " within ", limits.LoginWindow.String()))
+		}
+	}
+	return Verdict{}, false
+}
+
 // Fail counts a connection to destination that could not be opened.
 func (t *Tracker) Fail(limits *Limits, now time.Time, destination M.Socksaddr) (Verdict, bool) {
 	if limits.FailedDestinations <= 0 {
@@ -181,6 +240,7 @@ func (t *Tracker) scanWindow(limits *Limits, now time.Time) *scanWindow {
 func (t *Tracker) trip(kind Kind, reason string) (Verdict, bool) {
 	t.scan = scanWindow{}
 	t.flood = floodWindow{}
+	t.login = loginWindow{}
 	return Verdict{Kind: kind, Reason: reason}, true
 }
 

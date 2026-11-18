@@ -41,7 +41,9 @@ func TestAbuseGuardOptions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !guard.bitTorrent || !slices.Equal(guard.blockedPorts, constant.DefaultBlockedPorts) ||
+	if !guard.p2p || !slices.Equal(guard.blockedPorts, constant.DefaultBlockedPorts) ||
+		!slices.Equal(guard.loginPorts, constant.DefaultLoginPorts) ||
+		guard.limits.LoginHosts != constant.DefaultBruteForceHosts ||
 		guard.limits.FailedDestinations != constant.DefaultPortScanFailedDestinations ||
 		guard.limits.ConnectionsPerDestination != constant.DefaultFloodConnectionsPerDestination ||
 		guard.banDuration != constant.DefaultAbuseBanDuration {
@@ -52,7 +54,7 @@ func TestAbuseGuardOptions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if guard.bitTorrent || len(guard.blockedPorts) > 0 || guard.watchesDials() || guard.limits.Connections > 0 {
+	if guard.p2p || len(guard.blockedPorts) > 0 || len(guard.loginPorts) > 0 || guard.watchesDials() || guard.limits.Connections > 0 {
 		t.Fatalf("disabled guard still checks: %+v", guard)
 	}
 
@@ -76,7 +78,7 @@ func TestAbuseGuardOptions(t *testing.T) {
 		t.Fatalf("flood options: %+v", guard.limits)
 	}
 
-	for _, invalid := range []string{`{"ban_duration": "-1s"}`, `{"bittorrent": {"rule_id": -1}}`, `{"flood": {"connections": -5}}`} {
+	for _, invalid := range []string{`{"ban_duration": "-1s"}`, `{"p2p": {"rule_id": -1}}`, `{"brute_force": {"hosts": -1}}`, `{"flood": {"connections": -5}}`} {
 		if _, err = newAbuseGuard(decodeAbuse(t, invalid), logger, newAuditor()); err == nil {
 			t.Error(invalid, " accepted")
 		}
@@ -104,7 +106,7 @@ func (s *packetSource) ReadPacket(buffer *buf.Buffer) (M.Socksaddr, error) {
 
 func TestPacketFilter(t *testing.T) {
 	auditor := newAuditor()
-	guard, err := newAbuseGuard(decodeAbuse(t, `{"bittorrent": {"rule_id": 5}, "blocked_ports": {"rule_id": 6}}`), log.NewNOPFactory().Logger(), auditor)
+	guard, err := newAbuseGuard(decodeAbuse(t, `{"p2p": {"rule_id": 5}, "blocked_ports": {"rule_id": 6}}`), log.NewNOPFactory().Logger(), auditor)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,6 +121,7 @@ func TestPacketFilter(t *testing.T) {
 	add("198.51.100.1:443", "first")
 	add("198.51.100.2:6881", "d1:ad2:id20:abcdefghij0123456789e1:q4:ping1:t2:aa1:y1:qe")
 	add("198.51.100.3:25", "spam")
+	add("198.51.100.4:4672", "\xe4\x60")
 	add("198.51.100.1:443", "second")
 	conn := guard.filterPackets(context.Background(), user, source)
 

@@ -71,22 +71,25 @@ Besides the panel's detect rules, every node refuses common abuse on its own. Al
 ```jsonc
 "abuse": {
   "disabled": false,                  // true turns every check off
-  "ban_duration": "10m",              // how long a scanning or flooding user is refused on this node
-  "bittorrent":    { "disabled": false, "rule_id": 0 },
-  "blocked_ports": { "disabled": false, "rule_id": 0, "ports": [25] },
+  "ban_duration": "10m",              // how long a scanning, flooding or brute-forcing user is refused on this node
+  "p2p":           { "disabled": false, "rule_id": 0 },
+  "blocked_ports": { "disabled": false, "rule_id": 0, "ports": [25, 135, 137, 138, 139, 445] },
   "port_scan":     { "disabled": false, "rule_id": 0, "window": "1m",  "failed_destinations": 60, "ports_per_host": 100 },
-  "flood":         { "disabled": false, "rule_id": 0, "window": "10s", "connections": 1000, "connections_per_destination": 200 }
+  "flood":         { "disabled": false, "rule_id": 0, "window": "10s", "connections": 1000, "connections_per_destination": 200 },
+  "brute_force":   { "disabled": false, "rule_id": 0, "window": "1m",  "hosts": 30, "connections_per_destination": 120,
+                     "ports": [21, 22, 23, 1433, 1521, 3306, 3389, 5432, 5900, 5985, 5986, 6379, 27017] }
 }
 ```
 
-- **BitTorrent**: a TCP connection opening with the peer handshake or an HTTP tracker announce or scrape is refused, as is a UDP session opening with uTP, DHT or a UDP tracker request. Later DHT and tracker packets in an open UDP session are dropped and the session carries on. Encrypted peer connections (MSE) and HTTPS trackers cannot be told apart from other encrypted traffic and pass.
-- **Blocked ports**: connections and UDP packets to these ports are refused. The default blocks SMTP (25), the port spam goes out on; mail clients submit on 465 and 587, which stay open. An empty list blocks nothing.
+- **P2P**: BitTorrent and eDonkey/Kad (eMule, and the P2P side of Xunlei). A TCP connection opening with the BitTorrent peer handshake, an HTTP tracker announce or scrape, or an eDonkey hello is refused, as is a UDP session opening with uTP, DHT, a UDP tracker request or a Kad message. Later DHT, tracker and Kad packets in an open UDP session are dropped and the session carries on. Encrypted BitTorrent (MSE), obfuscated eDonkey and HTTPS trackers cannot be told apart from other encrypted traffic and pass.
+- **Blocked ports**: connections and UDP packets to these ports are refused. The default blocks SMTP (25), the port spam goes out on (mail clients submit on 465 and 587, which stay open), and MS-RPC and NetBIOS/SMB (135, 137-139, 445), which worms spread on and which many ISPs block anyway; file shares across the internet, such as Azure Files over SMB, need 445 taken off the list. An empty list blocks nothing.
 - **Port scans**: a user whose TCP connections fail for more than `failed_destinations` different destinations, or who reaches more than `ports_per_host` ports of one host, within `window`, is banned on this node. Refused and timed-out connections count. Failures that say more about the node than about the user do not: networks the node has no route to (IPv6 on a node without it), private addresses the node refuses itself, and anything that fails while nothing on the node gets through, as when its uplink or `front_proxy` is down.
 - **Floods**: a user who opens more than `connections` TCP connections, or more than `connections_per_destination` to one destination (host and port), within `window`, is banned on this node. Many requests inside one kept-alive or HTTP/2 connection are encrypted and cannot be counted; the speed limit is what bounds them.
+- **Brute force**: on login ports (SSH, Telnet, FTP, RDP, VNC, WinRM and databases), a user who reaches more than `hosts` different hosts, or opens more than `connections_per_destination` TCP connections to one host and port, within `window`, is banned on this node. The first is credential spraying, the second hammering one server. Git over SSH counts its host once, however many repositories it fetches, but a tool that opens a new SSH connection per task to many servers (Ansible without connection reuse, for example) can reach `hosts`; raise it for users who manage fleets through the node.
 
 A ban closes the user's open connections on this node and refuses new ones, TCP and UDP, for `ban_duration`. Other users and other nodes are not affected, and the ban does not survive a restart. Windows are fixed, starting with the user's first connection after the previous window ended, and a threshold of 0 takes the default.
 
-Bans are logged at warn. A refused BitTorrent or blocked-port connection is logged at info once a minute per user and kind, and at debug otherwise. Setting `rule_id` to the ID of a detect rule in the panel reports hits to the panel as hits of that rule, once a minute per user and kind and once per ban, so they appear in its detect log and count toward its automatic ban (`auto_detect_ban_number`). Create one rule per kind, for example "BitTorrent (node)", with a regex that matches nothing real, such as `^node-side-abuse-check$`, since the node also applies the rule as a normal detect rule. 0 reports nothing.
+Bans are logged at warn. A refused P2P or blocked-port connection is logged at info once a minute per user and kind, naming the protocol, and at debug otherwise. Setting `rule_id` to the ID of a detect rule in the panel reports hits to the panel as hits of that rule, once a minute per user and kind and once per ban, so they appear in its detect log and count toward its automatic ban (`auto_detect_ban_number`). Create one plaintext rule per kind, for example "P2P (node)", with a regex that matches nothing real, such as `^nextserver-abuse-p2p$`, since the node also applies the rule as a normal detect rule. 0 reports nothing.
 
 ### Behaviour worth knowing
 

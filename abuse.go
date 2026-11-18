@@ -23,20 +23,21 @@ import (
 )
 
 // abuseGuard runs the node's own abuse checks (option.AbuseOptions).
-// BitTorrent and blocked ports refuse the connection; a port scan or a
-// connection flood bans the user on this node for a while and closes their
-// open connections. Hits go to the panel as detect logs of the configured
+// P2P and blocked ports refuse the connection; a port scan, a connection
+// flood or brute force bans the user on this node for a while and closes
+// their open connections. Hits go to the panel as detect logs of the configured
 // rule, at most once per AbuseNoticeInterval per user and kind.
 type abuseGuard struct {
 	logger  log.ContextLogger
 	auditor *auditor
 
 	banDuration time.Duration
-	bitTorrent  bool
-	// blockedPorts is empty when no port is blocked.
+	p2p         bool
+	// blockedPorts and loginPorts are empty when the check is off.
 	blockedPorts []uint16
+	loginPorts   []uint16
 	limits       abuse.Limits
-	ruleIDs      [4]int
+	ruleIDs      [abuse.Kinds]int
 
 	// lastDial is when a dial on this node last got through (UnixNano).
 	lastDial atomic.Int64
@@ -51,9 +52,10 @@ func newAbuseGuard(options *option.AbuseOptions, logger log.ContextLogger, audit
 		return guard, nil
 	}
 	durations := map[string]time.Duration{
-		"ban_duration":     time.Duration(options.BanDuration),
-		"port_scan.window": time.Duration(options.PortScan.Window),
-		"flood.window":     time.Duration(options.Flood.Window),
+		"ban_duration":       time.Duration(options.BanDuration),
+		"port_scan.window":   time.Duration(options.PortScan.Window),
+		"flood.window":       time.Duration(options.Flood.Window),
+		"brute_force.window": time.Duration(options.BruteForce.Window),
 	}
 	for name, value := range durations {
 		if value < 0 {
@@ -61,14 +63,17 @@ func newAbuseGuard(options *option.AbuseOptions, logger log.ContextLogger, audit
 		}
 	}
 	counts := map[string]int{
-		"bittorrent.rule_id":                options.BitTorrent.RuleID,
-		"blocked_ports.rule_id":             options.BlockedPorts.RuleID,
-		"port_scan.rule_id":                 options.PortScan.RuleID,
-		"port_scan.failed_destinations":     options.PortScan.FailedDestinations,
-		"port_scan.ports_per_host":          options.PortScan.PortsPerHost,
-		"flood.rule_id":                     options.Flood.RuleID,
-		"flood.connections":                 options.Flood.Connections,
-		"flood.connections_per_destination": options.Flood.ConnectionsPerDestination,
+		"p2p.rule_id":                             options.P2P.RuleID,
+		"blocked_ports.rule_id":                   options.BlockedPorts.RuleID,
+		"port_scan.rule_id":                       options.PortScan.RuleID,
+		"port_scan.failed_destinations":           options.PortScan.FailedDestinations,
+		"port_scan.ports_per_host":                options.PortScan.PortsPerHost,
+		"flood.rule_id":                           options.Flood.RuleID,
+		"flood.connections":                       options.Flood.Connections,
+		"flood.connections_per_destination":       options.Flood.ConnectionsPerDestination,
+		"brute_force.rule_id":                     options.BruteForce.RuleID,
+		"brute_force.hosts":                       options.BruteForce.Hosts,
+		"brute_force.connections_per_destination": options.BruteForce.ConnectionsPerDestination,
 	}
 	for name, value := range counts {
 		if value < 0 {
@@ -76,7 +81,7 @@ func newAbuseGuard(options *option.AbuseOptions, logger log.ContextLogger, audit
 		}
 	}
 	guard.banDuration = orDefault(time.Duration(options.BanDuration), constant.DefaultAbuseBanDuration)
-	guard.bitTorrent = !options.BitTorrent.Disabled
+	guard.p2p = !options.P2P.Disabled
 	if !options.BlockedPorts.Disabled {
 		guard.blockedPorts = options.BlockedPorts.Ports
 		if guard.blockedPorts == nil {
@@ -93,10 +98,20 @@ func newAbuseGuard(options *option.AbuseOptions, logger log.ContextLogger, audit
 		guard.limits.Connections = orDefault(options.Flood.Connections, constant.DefaultFloodConnections)
 		guard.limits.ConnectionsPerDestination = orDefault(options.Flood.ConnectionsPerDestination, constant.DefaultFloodConnectionsPerDestination)
 	}
-	guard.ruleIDs[abuse.BitTorrent] = options.BitTorrent.RuleID
+	if !options.BruteForce.Disabled {
+		guard.loginPorts = options.BruteForce.Ports
+		if guard.loginPorts == nil {
+			guard.loginPorts = constant.DefaultLoginPorts
+		}
+		guard.limits.LoginWindow = orDefault(time.Duration(options.BruteForce.Window), constant.DefaultBruteForceWindow)
+		guard.limits.LoginHosts = orDefault(options.BruteForce.Hosts, constant.DefaultBruteForceHosts)
+		guard.limits.LoginConnectionsPerDestination = orDefault(options.BruteForce.ConnectionsPerDestination, constant.DefaultBruteForceConnectionsPerDestination)
+	}
+	guard.ruleIDs[abuse.P2P] = options.P2P.RuleID
 	guard.ruleIDs[abuse.BlockedPort] = options.BlockedPorts.RuleID
 	guard.ruleIDs[abuse.PortScan] = options.PortScan.RuleID
 	guard.ruleIDs[abuse.Flood] = options.Flood.RuleID
+	guard.ruleIDs[abuse.BruteForce] = options.BruteForce.RuleID
 	return guard, nil
 }
 
@@ -118,7 +133,7 @@ func (g *abuseGuard) refuse(message ...any) error {
 
 // admit runs the checks that need only the destination, before anything is
 // read from the connection: the ban, and for TCP blocked ports and the counts
-// that catch floods and port scans. A UDP session may send anywhere, so
+// that catch floods, port scans and brute force. A UDP session may send anywhere, so
 // filterPackets checks each of its packets instead.
 func (g *abuseGuard) admit(ctx context.Context, user *userState, network string, destination M.Socksaddr) error {
 	now := time.Now()
@@ -129,10 +144,13 @@ func (g *abuseGuard) admit(ctx context.Context, user *userState, network string,
 		return nil
 	}
 	if slices.Contains(g.blockedPorts, destination.Port) {
-		g.hit(ctx, user, abuse.BlockedPort, now, destination)
+		g.hit(ctx, user, abuse.BlockedPort, "", now, destination)
 		return g.refuse("port ", destination.Port, " is blocked: ", destination)
 	}
 	verdict, crossed := user.abuse.Connect(&g.limits, now, destination)
+	if !crossed && slices.Contains(g.loginPorts, destination.Port) {
+		verdict, crossed = user.abuse.Login(&g.limits, now, destination)
+	}
 	if crossed {
 		g.ban(ctx, user, verdict, now)
 		return g.refuse("banned on this node: ", destination)
@@ -142,46 +160,63 @@ func (g *abuseGuard) admit(ctx context.Context, user *userState, network string,
 
 // inspectsPayload reports whether the guard needs the first payload.
 func (g *abuseGuard) inspectsPayload() bool {
-	return g.bitTorrent
+	return g.p2p
 }
 
-// checkStream refuses a TCP connection whose first payload is BitTorrent.
+// checkStream refuses a TCP connection whose first payload is P2P.
 func (g *abuseGuard) checkStream(ctx context.Context, user *userState, metadata *boxAdapter.InboundContext, payload []byte) error {
-	if !g.bitTorrent || (metadata.Protocol != C.ProtocolBitTorrent && !abuse.BitTorrentRequest(payload)) {
+	if !g.p2p {
 		return nil
 	}
-	g.hit(ctx, user, abuse.BitTorrent, time.Now(), metadata.Destination)
-	return g.refuse("BitTorrent refused: ", metadata.Destination)
+	protocol, found := abuse.P2PStream(payload)
+	if metadata.Protocol == C.ProtocolBitTorrent {
+		protocol, found = abuse.BitTorrent, true
+	}
+	if !found {
+		return nil
+	}
+	g.hit(ctx, user, abuse.P2P, protocol, time.Now(), metadata.Destination)
+	return g.refuse(protocol, " refused: ", metadata.Destination)
 }
 
-// checkPacket refuses a UDP session whose first packet is BitTorrent.
+// checkPacket refuses a UDP session whose first packet is P2P.
 func (g *abuseGuard) checkPacket(ctx context.Context, user *userState, metadata *boxAdapter.InboundContext, payload []byte) error {
-	if !g.bitTorrent || (metadata.Protocol != C.ProtocolBitTorrent && !abuse.BitTorrentPacket(payload)) {
+	if !g.p2p {
 		return nil
 	}
-	g.hit(ctx, user, abuse.BitTorrent, time.Now(), metadata.Destination)
-	return g.refuse("BitTorrent refused: ", metadata.Destination)
+	protocol, found := abuse.P2PPacket(payload)
+	if metadata.Protocol == C.ProtocolBitTorrent {
+		protocol, found = abuse.BitTorrent, true
+	}
+	if !found {
+		return nil
+	}
+	g.hit(ctx, user, abuse.P2P, protocol, time.Now(), metadata.Destination)
+	return g.refuse(protocol, " refused: ", metadata.Destination)
 }
 
 // filterPackets drops the packets of a UDP session that go to a blocked port
-// or are BitTorrent, as a firewall would, so that the rest of the session
-// carries on: a full-cone session sends each packet where it says, and a
-// client may well open it with something else.
+// or are P2P, as a firewall would, so that the rest of the session carries
+// on: a full-cone session sends each packet where it says, and a client may
+// well open it with something else.
 func (g *abuseGuard) filterPackets(ctx context.Context, user *userState, conn N.PacketConn) N.PacketConn {
-	if !g.bitTorrent && len(g.blockedPorts) == 0 {
+	if !g.p2p && len(g.blockedPorts) == 0 {
 		return conn
 	}
 	return &packetFilterConn{PacketConn: conn, ctx: ctx, guard: g, user: user}
 }
 
-func (g *abuseGuard) dropsPacket(destination M.Socksaddr, payload []byte) (abuse.Kind, bool) {
+// dropsPacket returns the kind of abuse a packet is, and for P2P the protocol.
+func (g *abuseGuard) dropsPacket(destination M.Socksaddr, payload []byte) (abuse.Kind, string, bool) {
 	if slices.Contains(g.blockedPorts, destination.Port) {
-		return abuse.BlockedPort, true
+		return abuse.BlockedPort, "", true
 	}
-	if g.bitTorrent && abuse.BitTorrentPacket(payload) {
-		return abuse.BitTorrent, true
+	if g.p2p {
+		if protocol, found := abuse.P2PPacket(payload); found {
+			return abuse.P2P, protocol, true
+		}
 	}
-	return 0, false
+	return 0, "", false
 }
 
 // watchesDials reports whether failed dials count toward a port scan.
@@ -227,12 +262,16 @@ func (g *abuseGuard) ban(ctx context.Context, user *userState, verdict abuse.Ver
 }
 
 // hit logs and reports a refused connection, unless the user had one of the
-// same kind within AbuseNoticeInterval.
-func (g *abuseGuard) hit(ctx context.Context, user *userState, kind abuse.Kind, now time.Time, destination M.Socksaddr) {
+// same kind within AbuseNoticeInterval. protocol names what was found, for P2P.
+func (g *abuseGuard) hit(ctx context.Context, user *userState, kind abuse.Kind, protocol string, now time.Time, destination M.Socksaddr) {
 	if !user.abuse.Notice(kind, now, constant.AbuseNoticeInterval) {
 		return
 	}
-	g.logger.InfoContext(ctx, "[", user.id, "] ", kind.String(), " refused: ", destination, " (repeats within ", constant.AbuseNoticeInterval.String(), " are not logged)")
+	what := kind.String()
+	if protocol != "" {
+		what += " (" + protocol + ")"
+	}
+	g.logger.InfoContext(ctx, "[", user.id, "] ", what, " refused: ", destination, " (repeats within ", constant.AbuseNoticeInterval.String(), " are not logged)")
 	g.report(user, kind)
 }
 
@@ -277,11 +316,11 @@ func (c *packetFilterConn) ReadPacket(buffer *buf.Buffer) (M.Socksaddr, error) {
 		if err != nil {
 			return destination, err
 		}
-		kind, drop := c.guard.dropsPacket(destination, buffer.Bytes())
+		kind, protocol, drop := c.guard.dropsPacket(destination, buffer.Bytes())
 		if !drop {
 			return destination, nil
 		}
-		c.guard.hit(c.ctx, c.user, kind, time.Now(), destination)
+		c.guard.hit(c.ctx, c.user, kind, protocol, time.Now(), destination)
 		buffer.Resize(start, 0)
 	}
 }

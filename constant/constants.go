@@ -21,6 +21,10 @@ const (
 	DefaultFloodConnections               = 1000
 	DefaultFloodConnectionsPerDestination = 200
 
+	DefaultBruteForceWindow                    = time.Minute
+	DefaultBruteForceHosts                     = 30
+	DefaultBruteForceConnectionsPerDestination = 120
+
 	// AbuseOutageGrace: a failed dial counts toward a port scan only if a
 	// dial on the node got through since this long before it started.
 	AbuseOutageGrace = 5 * time.Second
@@ -30,6 +34,12 @@ const (
 	AbuseNoticeInterval = time.Minute
 )
 
-// DefaultBlockedPorts are refused unless configured otherwise: SMTP, which
-// spam goes out on.
-var DefaultBlockedPorts = []uint16{25}
+var (
+	// DefaultBlockedPorts are refused unless configured otherwise: SMTP, which
+	// spam goes out on, and MS-RPC and NetBIOS/SMB, which worms spread on and
+	// nobody needs across the internet.
+	DefaultBlockedPorts = []uint16{25, 135, 137, 138, 139, 445}
+	// DefaultLoginPorts are where brute force goes: FTP, SSH, Telnet, MS SQL,
+	// Oracle, MySQL, RDP, PostgreSQL, VNC, WinRM, Redis and MongoDB.
+	DefaultLoginPorts = []uint16{21, 22, 23, 1433, 1521, 3306, 3389, 5432, 5900, 5985, 5986, 6379, 27017}
+)

@@ -12,7 +12,7 @@
 
 ### Added
 
-- **Abuse checks** that run on every node without detect rules: BitTorrent (peer handshake, HTTP and UDP trackers, uTP, DHT) is refused, SMTP (port 25) is blocked, and a user who port-scans or floods connections is banned on that node for 10 minutes, with their open connections closed. All on by default; the new `abuse` section changes thresholds, turns checks off, or reports hits to the panel under a detect rule so they count toward its automatic ban. See "Abuse checks" in the README.
+- **Abuse checks** that run on every node without detect rules: P2P file sharing (BitTorrent peer handshake, HTTP and UDP trackers, uTP and DHT; eDonkey and Kad) is refused, SMTP (25) and MS-RPC/NetBIOS/SMB (135, 137-139, 445) are blocked, and a user who port-scans, floods connections or brute-forces login ports (SSH, RDP, databases and the like) is banned on that node for 10 minutes, with their open connections closed. All on by default; the new `abuse` section changes thresholds and ports, turns checks off, or reports hits to the panel under a detect rule so they count toward its automatic ban. See "Abuse checks" in the README.
 
 ## v1.0.2
 

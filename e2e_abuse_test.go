@@ -66,10 +66,10 @@ func detectLogged(panel *fakePanel, userID int, ruleID int) func() bool {
 	}
 }
 
-func TestAbuseBitTorrentRefused(t *testing.T) {
+func TestAbuseP2PRefused(t *testing.T) {
 	tcpEcho, udpEcho := startEcho(t)
 	panel, dialer, _ := startAbuseNode(t, &option.AbuseOptions{
-		BitTorrent: option.AbuseCheckOptions{RuleID: 21},
+		P2P: option.AbuseCheckOptions{RuleID: 21},
 	})
 	tcpDestination := M.ParseSocksaddrHostPort("127.0.0.1", uint16(tcpEcho))
 	udpDestination := M.ParseSocksaddrHostPort("127.0.0.1", uint16(udpEcho))
@@ -80,6 +80,12 @@ func TestAbuseBitTorrentRefused(t *testing.T) {
 	}
 	if echoes(dialer, tcpDestination, []byte("GET /announce?info_hash=%12%34&peer_id=-qB4650-abc HTTP/1.1\r\nHost: tracker\r\n\r\n")) {
 		t.Fatal("tracker announce got through")
+	}
+	// An eDonkey server login: 0xE3, the length, opcode 0x01, a user hash,
+	// client ID, port and no tags.
+	login := append([]byte{0xE3, 27, 0, 0, 0, 0x01}, make([]byte, 26)...)
+	if echoes(dialer, tcpDestination, login) {
+		t.Fatal("eDonkey login got through")
 	}
 	if !echoes(dialer, tcpDestination, []byte("GET /index.html HTTP/1.1\r\nHost: example\r\n\r\n")) {
 		t.Fatal("a plain HTTP request was refused")
@@ -100,11 +106,14 @@ func TestAbuseBitTorrentRefused(t *testing.T) {
 	if udpEchoes(conn, udpDestination, dht, 2) {
 		t.Fatal("DHT packet got through")
 	}
+	if udpEchoes(conn, udpDestination, []byte{0xE4, 0x60}, 2) {
+		t.Fatal("Kad ping got through")
+	}
 	if !udpEchoes(conn, udpDestination, []byte("again"), 3) {
-		t.Fatal("the session ended after a DHT packet")
+		t.Fatal("the session ended after P2P packets")
 	}
 
-	eventually(t, 5*time.Second, "BitTorrent detect log", detectLogged(panel, 1, 21))
+	eventually(t, 5*time.Second, "P2P detect log", detectLogged(panel, 1, 21))
 }
 
 func TestAbuseBlockedPorts(t *testing.T) {
@@ -189,6 +198,30 @@ func TestAbuseFloodBans(t *testing.T) {
 	eventually(t, 5*time.Second, "flood detect log", detectLogged(panel, 1, 24))
 }
 
+func TestAbuseBruteForceBans(t *testing.T) {
+	tcpEcho, _ := startEcho(t)
+	panel, dialer, otherDialer := startAbuseNode(t, &option.AbuseOptions{
+		BruteForce: option.AbuseBruteForceOptions{
+			AbuseCheckOptions:         option.AbuseCheckOptions{RuleID: 25},
+			Ports:                     []uint16{uint16(tcpEcho)},
+			ConnectionsPerDestination: 5,
+		},
+	})
+	echo := M.ParseSocksaddrHostPort("127.0.0.1", uint16(tcpEcho))
+	for i := 0; i < 5; i++ {
+		if !echoes(dialer, echo, []byte("ping")) {
+			t.Fatal("refused at login attempt ", i+1, " of 5")
+		}
+	}
+	if echoes(dialer, echo, []byte("ping")) {
+		t.Fatal("the sixth login attempt got through")
+	}
+	if !echoes(otherDialer, echo, []byte("ping")) {
+		t.Fatal("another user was refused")
+	}
+	eventually(t, 5*time.Second, "brute force detect log", detectLogged(panel, 1, 25))
+}
+
 func TestAbuseDisabled(t *testing.T) {
 	tcpEcho, _ := startEcho(t)
 	_, dialer, _ := startAbuseNode(t, &option.AbuseOptions{
@@ -197,7 +230,7 @@ func TestAbuseDisabled(t *testing.T) {
 	})
 	echo := M.ParseSocksaddrHostPort("127.0.0.1", uint16(tcpEcho))
 	if !echoes(dialer, echo, append([]byte("\x13BitTorrent protocol"), make([]byte, 48)...)) {
-		t.Fatal("BitTorrent refused with abuse checks disabled")
+		t.Fatal("P2P refused with abuse checks disabled")
 	}
 	for i := 0; i < 3; i++ {
 		echoTCP(t, dialer, echo, 64)
