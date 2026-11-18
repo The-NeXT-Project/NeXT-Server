@@ -105,3 +105,51 @@ func TestPrivateFilterDropsLaterPackets(t *testing.T) {
 		t.Error("wrote to ", recorder.written)
 	}
 }
+
+func TestOwnAddressesRefused(t *testing.T) {
+	local := &localAddresses{}
+	if err := local.refresh(); err != nil {
+		t.Fatal(err)
+	}
+	if !local.contains(netip.MustParseAddr("127.0.0.1")) {
+		t.Fatal("interface addresses miss loopback")
+	}
+
+	own, ownV6 := netip.MustParseAddr("203.0.113.5"), netip.MustParseAddr("2602:f378::5")
+	local.set(own, ownV6)
+	server := &Server{local: local}
+	for _, destination := range []string{"203.0.113.5", "::ffff:203.0.113.5", "2602:f378::5"} {
+		metadata := boxAdapter.InboundContext{Destination: M.ParseSocksaddrHostPort(destination, 10050)}
+		if server.checkDestination(&metadata) == nil {
+			t.Error("allowed the node's own address ", destination)
+		}
+	}
+	metadata := boxAdapter.InboundContext{
+		Destination:          M.ParseSocksaddrHostPort("node.example.com", 22),
+		DestinationAddresses: []netip.Addr{own, ownV6, netip.MustParseAddr("93.184.215.14")},
+	}
+	if err := server.checkDestination(&metadata); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(metadata.DestinationAddresses, []netip.Addr{netip.MustParseAddr("93.184.215.14")}) {
+		t.Error("kept ", metadata.DestinationAddresses)
+	}
+	metadata = boxAdapter.InboundContext{Destination: M.ParseSocksaddrHostPort("203.0.113.6", 22)}
+	if err := server.checkDestination(&metadata); err != nil {
+		t.Error("refused a neighbour: ", err)
+	}
+
+	recorder := &recordingPacketConn{}
+	dialer := &privateFilterDialer{Dialer: packetDialer{conn: recorder}, local: local}
+	if _, err := dialer.ListenPacket(context.Background(), M.ParseSocksaddrHostPort("203.0.113.5", 53)); err == nil {
+		t.Fatal("listened for the node's own address")
+	}
+	conn, err := dialer.ListenPacket(context.Background(), M.ParseSocksaddrHostPort("1.1.1.1", 53))
+	if err != nil {
+		t.Fatal(err)
+	}
+	conn.(N.NetPacketConn).WritePacket(buf.As([]byte("ping")).ToOwned(), M.ParseSocksaddrHostPort("2602:f378::5", 53))
+	if len(recorder.written) > 0 {
+		t.Error("wrote to ", recorder.written)
+	}
+}

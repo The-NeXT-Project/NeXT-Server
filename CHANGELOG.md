@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Security
+
+- Users can no longer reach the node through its own public addresses. v1.0.1 refused loopback and private networks, but a service listening on all interfaces (a monitoring agent, a database, SSH) was still reachable at the node's public IPv4 or IPv6 address, with the node itself as the source, which firewall rules that allow the node's own address let through. Every address on the node's interfaces is now refused, read again on every pull so that a PPPoE or DHCP node's new address is covered. `allow_private_destinations` lifts this as before.
+
 ### Fixed
 
 - Hexadecimal detect rules were matched as plaintext rules. NeXT-Panel stores them as type 0, but v1 took type 2 for hexadecimal and anything else for plaintext, so a hex regex such as `^1603` was matched against the raw payload and practically never hit. Rule types other than 0 and 1 are now reported and skipped.

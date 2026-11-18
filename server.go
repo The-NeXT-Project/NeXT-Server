@@ -42,8 +42,10 @@ type Server struct {
 	resolveDomain bool
 	connections   *route.ConnectionManager
 	users         *userTable
-	auditor       *auditor
-	abuse         *abuseGuard
+	// local is nil with allow_private_destinations.
+	local   *localAddresses
+	auditor *auditor
+	abuse   *abuseGuard
 
 	pullInterval time.Duration
 	pushInterval time.Duration
@@ -104,7 +106,8 @@ func NewServer(ctx context.Context, logger log.ContextLogger, errorReporter repo
 		server.resolveDomain = options.FrontProxy.ResolveDomain
 	}
 	if !options.AllowPrivateDestinations {
-		server.dialer = &privateFilterDialer{Dialer: server.dialer, passDomains: !server.resolveDomain}
+		server.local = &localAddresses{}
+		server.dialer = &privateFilterDialer{Dialer: server.dialer, passDomains: !server.resolveDomain, local: server.local}
 	}
 	server.traffic = &reportOutbox[adapter.UserTraffic]{
 		name:    "traffic",
@@ -146,6 +149,7 @@ func (s *Server) Start() error {
 	}
 	s.applyUsers(users)
 	s.pullDetectRules()
+	s.refreshLocalAddresses()
 	err = s.syncNodeServer()
 	if err != nil {
 		return err
@@ -227,6 +231,15 @@ func (s *Server) pullOnce() {
 		s.applyUsers(users)
 	}
 	s.pullDetectRules()
+	s.refreshLocalAddresses()
+}
+
+// refreshLocalAddresses keeps the last addresses when reading them fails,
+// which leaves at least the private networks refused.
+func (s *Server) refreshLocalAddresses() {
+	if s.local != nil {
+		s.logError("refresh local addresses", s.local.refresh())
+	}
 }
 
 func (s *Server) pullDetectRules() {
