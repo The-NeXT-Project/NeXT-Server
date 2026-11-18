@@ -45,7 +45,8 @@ The node listens on `offset_port_node`, falling back to `offset_port_user`, then
       "multiplex": { "enabled": true },  // sing-mux for VMess, Trojan and Shadowsocks
       "dialer": {},                  // sing-box dialer options for outbound traffic
       "front_proxy": null,           // { "type": "socks5"|"socks4"|"socks4a"|"http", "server": "host:port", ... }
-      "allow_private_destinations": false  // let users reach the node itself and its private networks
+      "allow_private_destinations": false, // let users reach the node itself and its private networks
+      "abuse": {}                    // BitTorrent, spam, port scan and flood checks, see below
     }
   ]
 }
@@ -62,6 +63,30 @@ TLS node types (TUIC, Hysteria2, AnyTLS, Trojan, and VMess with `"security": "tl
 - Nothing: a self-signed certificate is generated, and clients connect only with `allow_insecure` set on the node.
 
 The panel's `host` becomes the server name.
+
+### Abuse checks
+
+Besides the panel's detect rules, every node refuses common abuse on its own. All checks are on by default; `abuse` only needs to be set to change them:
+
+```jsonc
+"abuse": {
+  "disabled": false,                  // true turns every check off
+  "ban_duration": "10m",              // how long a scanning or flooding user is refused on this node
+  "bittorrent":    { "disabled": false, "rule_id": 0 },
+  "blocked_ports": { "disabled": false, "rule_id": 0, "ports": [25] },
+  "port_scan":     { "disabled": false, "rule_id": 0, "window": "1m",  "failed_destinations": 60, "ports_per_host": 100 },
+  "flood":         { "disabled": false, "rule_id": 0, "window": "10s", "connections": 1000, "connections_per_destination": 200 }
+}
+```
+
+- **BitTorrent**: a TCP connection opening with the peer handshake or an HTTP tracker announce or scrape is refused, as is a UDP session opening with uTP, DHT or a UDP tracker request. Later DHT and tracker packets in an open UDP session are dropped and the session carries on. Encrypted peer connections (MSE) and HTTPS trackers cannot be told apart from other encrypted traffic and pass.
+- **Blocked ports**: connections and UDP packets to these ports are refused. The default blocks SMTP (25), the port spam goes out on; mail clients submit on 465 and 587, which stay open. An empty list blocks nothing.
+- **Port scans**: a user whose TCP connections fail for more than `failed_destinations` different destinations, or who reaches more than `ports_per_host` ports of one host, within `window`, is banned on this node. Refused and timed-out connections count. Failures that say more about the node than about the user do not: networks the node has no route to (IPv6 on a node without it), private addresses the node refuses itself, and anything that fails while nothing on the node gets through, as when its uplink or `front_proxy` is down.
+- **Floods**: a user who opens more than `connections` TCP connections, or more than `connections_per_destination` to one destination (host and port), within `window`, is banned on this node. Many requests inside one kept-alive or HTTP/2 connection are encrypted and cannot be counted; the speed limit is what bounds them.
+
+A ban closes the user's open connections on this node and refuses new ones, TCP and UDP, for `ban_duration`. Other users and other nodes are not affected, and the ban does not survive a restart. Windows are fixed, starting with the user's first connection after the previous window ended, and a threshold of 0 takes the default.
+
+Bans are logged at warn. A refused BitTorrent or blocked-port connection is logged at info once a minute per user and kind, and at debug otherwise. Setting `rule_id` to the ID of a detect rule in the panel reports hits to the panel as hits of that rule, once a minute per user and kind and once per ban, so they appear in its detect log and count toward its automatic ban (`auto_detect_ban_number`). Create one rule per kind, for example "BitTorrent (node)", with a regex that matches nothing real, such as `^node-side-abuse-check$`, since the node also applies the rule as a normal detect rule. 0 reports nothing.
 
 ### Behaviour worth knowing
 

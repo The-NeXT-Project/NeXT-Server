@@ -43,6 +43,7 @@ type Server struct {
 	connections   *route.ConnectionManager
 	users         *userTable
 	auditor       *auditor
+	abuse         *abuseGuard
 
 	pullInterval time.Duration
 	pushInterval time.Duration
@@ -88,6 +89,11 @@ func NewServer(ctx context.Context, logger log.ContextLogger, errorReporter repo
 		auditor:       newAuditor(),
 		pullInterval:  time.Duration(options.PullInterval),
 		pushInterval:  time.Duration(options.PushInterval),
+	}
+	server.abuse, err = newAbuseGuard(options.Abuse, logger, server.auditor)
+	if err != nil {
+		cancel()
+		return nil, err
 	}
 	if options.FrontProxy != nil && options.FrontProxy.Type != "" {
 		server.dialer, err = frontproxy.New(defaultDialer, *options.FrontProxy)

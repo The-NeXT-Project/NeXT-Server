@@ -69,4 +69,8 @@ type ServerOptions struct {
 	// cloud's metadata service), CGNAT, multicast and broadcast addresses,
 	// whether given directly or resolved from a domain. Refused by default.
 	AllowPrivateDestinations bool `json:"allow_private_destinations,omitempty"`
+
+	// Abuse configures the node's own checks against BitTorrent, spam, port
+	// scans and connection floods. Left out, they all run with their defaults.
+	Abuse *AbuseOptions `json:"abuse,omitempty"`
 }

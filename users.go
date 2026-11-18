@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/The-NeXT-Project/NeXT-Server/adapter"
+	"github.com/The-NeXT-Project/NeXT-Server/common/abuse"
 	"github.com/The-NeXT-Project/NeXT-Server/common/limit"
 )
 
@@ -19,6 +20,10 @@ type userState struct {
 	// their open connections.
 	ctx    context.Context
 	cancel context.CancelFunc
+	// scope ends the user's open connections when canceled: with ctx, or
+	// when they are banned, after which a fresh scope takes the new ones.
+	scope atomic.Pointer[connectionScope]
+	abuse abuse.Tracker
 
 	upload   atomic.Int64
 	download atomic.Int64
@@ -30,6 +35,11 @@ type userState struct {
 	active int
 }
 
+type connectionScope struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+}
+
 type ipActivity struct {
 	active   int
 	lastSeen time.Time
@@ -38,7 +48,21 @@ type ipActivity struct {
 func newUserState(ctx context.Context, id int) *userState {
 	state := &userState{id: id, ips: make(map[netip.Addr]*ipActivity)}
 	state.ctx, state.cancel = context.WithCancel(ctx)
+	state.closeConnections()
 	return state
+}
+
+// connectionContext is canceled when the user's open connections must close.
+func (u *userState) connectionContext() context.Context {
+	return u.scope.Load().ctx
+}
+
+// closeConnections closes the user's open connections and keeps serving them.
+func (u *userState) closeConnections() {
+	ctx, cancel := context.WithCancel(u.ctx)
+	if previous := u.scope.Swap(&connectionScope{ctx: ctx, cancel: cancel}); previous != nil {
+		previous.cancel()
+	}
 }
 
 func (u *userState) setSpeedLimit(bytesPerSecond uint64) {

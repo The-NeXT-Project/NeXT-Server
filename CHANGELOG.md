@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Abuse checks** that run on every node without detect rules: BitTorrent (peer handshake, HTTP and UDP trackers, uTP, DHT) is refused, SMTP (port 25) is blocked, and a user who port-scans or floods connections is banned on that node for 10 minutes, with their open connections closed. All on by default; the new `abuse` section changes thresholds, turns checks off, or reports hits to the panel under a detect rule so they count toward its automatic ban. See "Abuse checks" in the README.
+
 ## v1.0.2
 
 ### Performance

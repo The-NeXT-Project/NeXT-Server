@@ -2,6 +2,7 @@ package nextserver
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/netip"
 	"sync/atomic"
@@ -31,11 +32,17 @@ func (s *Server) RouteConnectionEx(ctx context.Context, conn net.Conn, metadata 
 		N.CloseOnHandshakeFailure(conn, onClose, err)
 		return
 	}
-	if s.auditor.enabled() {
-		conn, err = s.auditStream(ctx, conn, &metadata, user)
+	err = s.abuse.admit(ctx, user, N.NetworkTCP, metadata.Destination)
+	if err != nil {
+		N.CloseOnHandshakeFailure(conn, onClose, err)
+		s.logRefusal(ctx, user, err)
+		return
+	}
+	if s.auditor.enabled() || s.abuse.inspectsPayload() {
+		conn, err = s.inspectStream(ctx, conn, &metadata, user)
 		if err != nil {
 			N.CloseOnHandshakeFailure(conn, onClose, err)
-			s.logger.InfoContext(ctx, "[", user.id, "] ", err)
+			s.logRefusal(ctx, user, err)
 			return
 		}
 	}
@@ -56,8 +63,18 @@ func (s *Server) RouteConnectionEx(ctx context.Context, conn net.Conn, metadata 
 		conn = limiter.Conn(user.ctx, conn)
 	}
 	conn = bufio.NewInt64CounterConn(conn, []*atomic.Int64{&user.upload}, []*atomic.Int64{&user.download})
-	stop := context.AfterFunc(user.ctx, func() { conn.Close() })
-	s.connections.NewConnection(ctx, s.dialer, conn, metadata, func(err error) {
+	stop := context.AfterFunc(user.connectionContext(), func() { conn.Close() })
+	dialer := s.dialer
+	var watch *dialWatch
+	if s.abuse.watchesDials() {
+		watch = s.abuse.watchDial(s.dialer)
+		dialer = watch
+	}
+	destination := metadata.Destination
+	s.connections.NewConnection(ctx, dialer, conn, metadata, func(err error) {
+		if watch != nil && err != nil && !watch.connected.Load() {
+			s.abuse.dialFailed(ctx, user, watch, destination, err)
+		}
 		stop()
 		done()
 		onClose(err)
@@ -71,12 +88,18 @@ func (s *Server) RoutePacketConnectionEx(ctx context.Context, conn N.PacketConn,
 		N.CloseOnHandshakeFailure(conn, onClose, err)
 		return
 	}
-	if s.auditor.enabled() {
-		conn, err = s.auditPacket(ctx, conn, &metadata, user)
+	err = s.abuse.admit(ctx, user, N.NetworkUDP, metadata.Destination)
+	if err != nil {
+		N.CloseOnHandshakeFailure(conn, onClose, err)
+		s.logRefusal(ctx, user, err)
+		return
+	}
+	if s.auditor.enabled() || s.abuse.inspectsPayload() {
+		conn, err = s.inspectPacket(ctx, conn, &metadata, user)
 		if err != nil {
 			N.CloseOnHandshakeFailure(conn, onClose, err)
 			if !E.IsClosedOrCanceled(err) {
-				s.logger.InfoContext(ctx, "[", user.id, "] ", err)
+				s.logRefusal(ctx, user, err)
 			}
 			return
 		}
@@ -94,11 +117,14 @@ func (s *Server) RoutePacketConnectionEx(ctx context.Context, conn N.PacketConn,
 		return
 	}
 	done := user.open(metadata.Source.Addr)
+	// Innermost, so that dropped packets use up neither the speed limit nor
+	// the user's traffic.
+	conn = s.abuse.filterPackets(ctx, user, conn)
 	if limiter := user.limiter.Load(); limiter != nil {
 		conn = limiter.PacketConn(user.ctx, conn)
 	}
 	conn = bufio.NewInt64CounterPacketConn(conn, []*atomic.Int64{&user.upload}, nil, []*atomic.Int64{&user.download}, nil)
-	stop := context.AfterFunc(user.ctx, func() { conn.Close() })
+	stop := context.AfterFunc(user.connectionContext(), func() { conn.Close() })
 	s.connections.NewPacketConnection(ctx, s.dialer, conn, metadata, func(err error) {
 		stop()
 		done()
@@ -127,6 +153,17 @@ func onceClose(onClose N.CloseHandlerFunc) N.CloseHandlerFunc {
 		return func(error) {}
 	}
 	return N.OnceClose(onClose)
+}
+
+// logRefusal logs a refused connection. Detect rule hits are logged each
+// time, as before; the abuse guard logs its own refusals, rate limited, so
+// here they only go to debug.
+func (s *Server) logRefusal(ctx context.Context, user *userState, err error) {
+	if errors.As(err, new(abuseRefusal)) {
+		s.logger.DebugContext(ctx, "[", user.id, "] ", err)
+	} else {
+		s.logger.InfoContext(ctx, "[", user.id, "] ", err)
+	}
 }
 
 func (s *Server) connectionUser(ctx context.Context) (*userState, error) {
@@ -160,9 +197,9 @@ var packetSniffers = []sniff.PacketSniffer{
 	sniff.DTLSRecord,
 }
 
-// auditStream peeks at the first payload and refuses the connection when a
-// detect rule matches.
-func (s *Server) auditStream(ctx context.Context, conn net.Conn, metadata *boxAdapter.InboundContext, user *userState) (net.Conn, error) {
+// inspectStream peeks at the first payload and refuses the connection when a
+// detect rule matches or the abuse guard finds BitTorrent.
+func (s *Server) inspectStream(ctx context.Context, conn net.Conn, metadata *boxAdapter.InboundContext, user *userState) (net.Conn, error) {
 	if deadline.NeedAdditionalReadDeadline(conn) {
 		conn = deadline.NewConn(conn)
 	}
@@ -170,19 +207,22 @@ func (s *Server) auditStream(ctx context.Context, conn net.Conn, metadata *boxAd
 	// A server-first protocol sends nothing until the timeout; that is fine.
 	_ = sniff.PeekStream(ctx, metadata, conn, nil, buffer, 0, streamSniffers...)
 	rule, hit := s.auditor.match(destinationHost(metadata.Destination), metadata.Domain, buffer.Bytes())
+	var err error
+	if hit {
+		s.auditor.record(user.id, rule.ID)
+		err = E.New("blocked by detect rule ", rule.ID, ": ", metadata.Destination)
+	} else {
+		err = s.abuse.checkStream(ctx, user, metadata, buffer.Bytes())
+	}
 	if buffer.IsEmpty() {
 		buffer.Release()
 	} else {
 		conn = bufio.NewCachedConn(conn, buffer)
 	}
-	if hit {
-		s.auditor.record(user.id, rule.ID)
-		return conn, E.New("blocked by detect rule ", rule.ID, ": ", metadata.Destination)
-	}
-	return conn, nil
+	return conn, err
 }
 
-func (s *Server) auditPacket(ctx context.Context, conn N.PacketConn, metadata *boxAdapter.InboundContext, user *userState) (N.PacketConn, error) {
+func (s *Server) inspectPacket(ctx context.Context, conn N.PacketConn, metadata *boxAdapter.InboundContext, user *userState) (N.PacketConn, error) {
 	buffer := buf.NewPacket()
 	destination, err := conn.ReadPacket(buffer)
 	if err != nil {
@@ -194,12 +234,14 @@ func (s *Server) auditPacket(ctx context.Context, conn N.PacketConn, metadata *b
 	}
 	_ = sniff.PeekPacket(ctx, metadata, buffer.Bytes(), packetSniffers...)
 	rule, hit := s.auditor.match(destinationHost(destination), metadata.Domain, buffer.Bytes())
-	conn = bufio.NewCachedPacketConn(conn, buffer, destination)
 	if hit {
 		s.auditor.record(user.id, rule.ID)
-		return conn, E.New("blocked by detect rule ", rule.ID, ": ", destination)
+		err = E.New("blocked by detect rule ", rule.ID, ": ", destination)
+	} else {
+		err = s.abuse.checkPacket(ctx, user, metadata, buffer.Bytes())
 	}
-	return conn, nil
+	conn = bufio.NewCachedPacketConn(conn, buffer, destination)
+	return conn, err
 }
 
 func destinationHost(destination M.Socksaddr) string {
