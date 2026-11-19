@@ -54,7 +54,7 @@ func TestAbuseGuardOptions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if guard.p2p || len(guard.blockedPorts) > 0 || len(guard.loginPorts) > 0 || guard.watchesDials() || guard.limits.Connections > 0 {
+	if guard.p2p || len(guard.blockedPorts) > 0 || len(guard.loginPorts) > 0 || guard.watchesDials() || guard.limits.Connections > 0 || guard.signatures != nil {
 		t.Fatalf("disabled guard still checks: %+v", guard)
 	}
 
@@ -78,7 +78,7 @@ func TestAbuseGuardOptions(t *testing.T) {
 		t.Fatalf("flood options: %+v", guard.limits)
 	}
 
-	for _, invalid := range []string{`{"ban_duration": "-1s"}`, `{"p2p": {"rule_id": -1}}`, `{"brute_force": {"hosts": -1}}`, `{"flood": {"connections": -5}}`} {
+	for _, invalid := range []string{`{"ban_duration": "-1s"}`, `{"p2p": {"rule_id": -1}}`, `{"mining": {"rule_id": -2}}`, `{"signatures": {"url": "http://example.com/s.json"}}`, `{"brute_force": {"hosts": -1}}`, `{"flood": {"connections": -5}}`} {
 		if _, err = newAbuseGuard(decodeAbuse(t, invalid), logger, newAuditor()); err == nil {
 			t.Error(invalid, " accepted")
 		}

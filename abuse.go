@@ -38,6 +38,8 @@ type abuseGuard struct {
 	loginPorts   []uint16
 	limits       abuse.Limits
 	ruleIDs      [abuse.Kinds]int
+	// signatures holds the exploit and mining signatures of the enabled kinds.
+	signatures *signatureSet
 
 	// lastDial is when a dial on this node last got through (UnixNano).
 	lastDial atomic.Int64
@@ -74,6 +76,8 @@ func newAbuseGuard(options *option.AbuseOptions, logger log.ContextLogger, audit
 		"brute_force.rule_id":                     options.BruteForce.RuleID,
 		"brute_force.hosts":                       options.BruteForce.Hosts,
 		"brute_force.connections_per_destination": options.BruteForce.ConnectionsPerDestination,
+		"exploits.rule_id":                        options.Exploits.RuleID,
+		"mining.rule_id":                          options.Mining.RuleID,
 	}
 	for name, value := range counts {
 		if value < 0 {
@@ -112,6 +116,15 @@ func newAbuseGuard(options *option.AbuseOptions, logger log.ContextLogger, audit
 	guard.ruleIDs[abuse.PortScan] = options.PortScan.RuleID
 	guard.ruleIDs[abuse.Flood] = options.Flood.RuleID
 	guard.ruleIDs[abuse.BruteForce] = options.BruteForce.RuleID
+	guard.ruleIDs[abuse.Exploit] = options.Exploits.RuleID
+	guard.ruleIDs[abuse.Mining] = options.Mining.RuleID
+	if !options.Exploits.Disabled || !options.Mining.Disabled {
+		var err error
+		guard.signatures, err = newSignatureSet(options.Signatures, !options.Exploits.Disabled, !options.Mining.Disabled)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return guard, nil
 }
 
@@ -160,11 +173,18 @@ func (g *abuseGuard) admit(ctx context.Context, user *userState, network string,
 
 // inspectsPayload reports whether the guard needs the first payload.
 func (g *abuseGuard) inspectsPayload() bool {
-	return g.p2p
+	return g.p2p || g.signatures != nil
 }
 
-// checkStream refuses a TCP connection whose first payload is P2P.
+// checkStream refuses a TCP connection whose first payload is P2P, an
+// exploit attempt or a mining login.
 func (g *abuseGuard) checkStream(ctx context.Context, user *userState, metadata *boxAdapter.InboundContext, payload []byte) error {
+	if g.signatures != nil {
+		if signature, found := abuse.MatchSignatures(g.signatures.current(), payload); found {
+			g.hit(ctx, user, signature.Kind, signature.Name, time.Now(), metadata.Destination)
+			return g.refuse(signature.Kind.String(), " (", signature.Name, ") refused: ", metadata.Destination)
+		}
+	}
 	if !g.p2p {
 		return nil
 	}
@@ -262,7 +282,8 @@ func (g *abuseGuard) ban(ctx context.Context, user *userState, verdict abuse.Ver
 }
 
 // hit logs and reports a refused connection, unless the user had one of the
-// same kind within AbuseNoticeInterval. protocol names what was found, for P2P.
+// same kind within AbuseNoticeInterval. protocol names what was found: the
+// P2P protocol, or the signature.
 func (g *abuseGuard) hit(ctx context.Context, user *userState, kind abuse.Kind, protocol string, now time.Time, destination M.Socksaddr) {
 	if !user.abuse.Notice(kind, now, constant.AbuseNoticeInterval) {
 		return

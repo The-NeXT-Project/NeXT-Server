@@ -17,6 +17,12 @@ type AbuseOptions struct {
 	PortScan     AbusePortScanOptions     `json:"port_scan,omitempty"`
 	Flood        AbuseFloodOptions        `json:"flood,omitempty"`
 	BruteForce   AbuseBruteForceOptions   `json:"brute_force,omitempty"`
+	// Exploits refuses exploit attempts in plain HTTP, Mining logins to
+	// mining pools over plain Stratum, both by signatures matched against
+	// the first payload of a TCP connection.
+	Exploits   AbuseCheckOptions      `json:"exploits,omitempty"`
+	Mining     AbuseCheckOptions      `json:"mining,omitempty"`
+	Signatures AbuseSignaturesOptions `json:"signatures,omitempty"`
 }
 
 type AbuseCheckOptions struct {
@@ -63,4 +69,16 @@ type AbuseBruteForceOptions struct {
 	Window                    badoption.Duration `json:"window,omitempty"`
 	Hosts                     int                `json:"hosts,omitempty"`
 	ConnectionsPerDestination int                `json:"connections_per_destination,omitempty"`
+}
+
+// AbuseSignaturesOptions adds to and overrides the built-in exploit and
+// mining signatures without a new release. Both sources are read again on
+// every pull; a file is read only when it changed, a URL is asked with
+// If-None-Match. Built-in signatures come first, then the file's, then the
+// URL's, and a signature replaces an earlier one of the same name.
+type AbuseSignaturesOptions struct {
+	// Path is a signature file on the node, e.g. one Salt manages.
+	Path string `json:"path,omitempty"`
+	// URL serves a signature file over HTTPS.
+	URL string `json:"url,omitempty"`
 }

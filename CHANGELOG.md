@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.3.0
+
+### Added
+
+- **Exploit and mining checks.** Built-in signatures refuse exploit attempts in plain HTTP (Log4Shell, SQL injection, path traversal to system files, malware droppers, PHP-CGI argument injection, Spring4Shell, Apache's cgi-bin traversal) and logins to mining pools over plain Stratum (Stratum v1, XMRig-style logins, EthProxy). Both are on by default; `abuse.exploits` and `abuse.mining` turn them off or report hits to the panel under a detect rule.
+- **Live signature updates.** `abuse.signatures.path` (a file on the node) and `abuse.signatures.url` (HTTPS) add, replace or turn off signatures by name. They are read again on every pull, without a restart; a broken update is reported once and the last good signatures stay in force.
+
 ## v1.2.1
 
 ### Changed

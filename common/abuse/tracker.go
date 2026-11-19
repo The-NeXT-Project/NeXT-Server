@@ -18,6 +18,8 @@ const (
 	PortScan
 	Flood
 	BruteForce
+	Exploit
+	Mining
 	Kinds
 )
 
@@ -33,6 +35,10 @@ func (k Kind) String() string {
 		return "connection flood"
 	case BruteForce:
 		return "brute force"
+	case Exploit:
+		return "exploit"
+	case Mining:
+		return "crypto mining"
 	default:
 		return "abuse(" + F.ToString(int(k)) + ")"
 	}

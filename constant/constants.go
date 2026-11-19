@@ -29,6 +29,10 @@ const (
 	// dial on the node got through since this long before it started.
 	AbuseOutageGrace = 5 * time.Second
 
+	// SignatureFetchTimeout bounds fetching abuse.signatures.url, which
+	// happens in the pull loop.
+	SignatureFetchTimeout = 15 * time.Second
+
 	// AbuseNoticeInterval is how often one user's repeated hits of one kind
 	// are logged and reported to the panel.
 	AbuseNoticeInterval = time.Minute

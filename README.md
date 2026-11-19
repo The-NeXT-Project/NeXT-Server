@@ -77,7 +77,10 @@ Besides the panel's detect rules, every node refuses common abuse on its own. Al
   "port_scan":     { "disabled": false, "rule_id": 0, "window": "1m",  "failed_destinations": 60, "ports_per_host": 100 },
   "flood":         { "disabled": false, "rule_id": 0, "window": "10s", "connections": 1000, "connections_per_destination": 500 },
   "brute_force":   { "disabled": false, "rule_id": 0, "window": "1m",  "hosts": 30, "connections_per_destination": 120,
-                     "ports": [21, 22, 23, 1433, 1521, 3306, 3389, 5432, 5900, 5985, 5986, 6379, 27017] }
+                     "ports": [21, 22, 23, 1433, 1521, 3306, 3389, 5432, 5900, 5985, 5986, 6379, 27017] },
+  "exploits":      { "disabled": false, "rule_id": 0 },
+  "mining":        { "disabled": false, "rule_id": 0 },
+  "signatures":    { "path": "", "url": "" }   // live updates for exploits and mining, see below
 }
 ```
 
@@ -87,9 +90,26 @@ Besides the panel's detect rules, every node refuses common abuse on its own. Al
 - **Floods**: a user who opens more than `connections` TCP connections, or more than `connections_per_destination` to one destination (host and port), within `window`, is banned on this node. The per-destination default lets an app that retries one API in a tight loop through (200 caught one on its first day in production); HTTP floods open hundreds to thousands of connections a second. Many requests inside one kept-alive or HTTP/2 connection are encrypted and cannot be counted; the speed limit is what bounds them.
 - **Brute force**: on login ports (SSH, Telnet, FTP, RDP, VNC, WinRM and databases), a user who reaches more than `hosts` different hosts, or opens more than `connections_per_destination` TCP connections to one host and port, within `window`, is banned on this node. The first is credential spraying, the second hammering one server. Git over SSH counts its host once, however many repositories it fetches, but a tool that opens a new SSH connection per task to many servers (Ansible without connection reuse, for example) can reach `hosts`; raise it for users who manage fleets through the node.
 
+- **Exploits**: a TCP connection whose first payload is an exploit attempt in plain HTTP is refused: Log4Shell (JNDI lookups), SQL injection, path traversal to system files, malware droppers (`;wget`, `$(curl`, `/bin/busybox`, `chmod 777 /tmp`) and a few long-exploited bugs (PHP-CGI argument injection, Spring4Shell, Apache's `/cgi-bin/.%2e/` traversal). This is what scanners and botnets send to find and take over servers, and what gets a node's addresses reported. HTTPS, and later requests on a kept-alive connection, are not seen.
+- **Mining**: a TCP connection that logs in to a mining pool over plain Stratum (`mining.subscribe`, `mining.authorize`, an XMRig-style login naming its miner, EthProxy's `eth_submitLogin`) is refused. Pools reached over TLS (`stratum+ssl`) are not seen.
+
+Exploit and mining signatures are built in and can be updated without a new release. `signatures.path` names a file on the node (one Salt manages, for example), `signatures.url` an HTTPS address serving the same format; both are read again on every pull, the file when it changed and the URL with `If-None-Match`. Signatures apply in order: built-in, then the file's, then the URL's, and a signature replaces an earlier one of the same name, so an update can also fix or turn off a built-in one:
+
+```json
+{
+  "signatures": [
+    { "name": "struts-ognl", "regex": "(?i)%\\{\\(#[a-z_]+=" },
+    { "name": "cryptonight-login", "kind": "mining", "regex": "\"algo\"\\s*:\\s*\\[\"cn/" },
+    { "name": "sql-injection", "disabled": true }
+  ]
+}
+```
+
+`kind` is `exploit` (the default) or `mining`, and decides which check, and which `rule_id`, a signature belongs to. Regexes use Go's syntax (RE2: no lookarounds or backreferences) and see the first 8 KiB of the first payload as text; a TLS record is never looked into. The built-in names are `log4shell`, `sql-injection`, `path-traversal`, `malware-dropper`, `known-exploit`, `stratum`, `miner-login` and `ethproxy`. An update that cannot be read or parsed is logged at warn once and the node keeps the signatures it had; a single regex that does not compile is left out and the rest apply. A file that is removed takes its signatures with it. Updates are logged at info with the number of signatures in force.
+
 A ban closes the user's open connections on this node and refuses new ones, TCP and UDP, for `ban_duration`. Other users and other nodes are not affected, and the ban does not survive a restart. Windows are fixed, starting with the user's first connection after the previous window ended, and a threshold of 0 takes the default.
 
-Bans are logged at warn. A refused P2P or blocked-port connection is logged at info once a minute per user and kind, naming the protocol, and at debug otherwise. Setting `rule_id` to the ID of a detect rule in the panel reports hits to the panel as hits of that rule, once a minute per user and kind and once per ban, so they appear in its detect log and count toward its automatic ban (`auto_detect_ban_number`). Create one plaintext rule per kind, for example "P2P (node)", with a regex that matches nothing real, such as `^nextserver-abuse-p2p$`, since the node also applies the rule as a normal detect rule. 0 reports nothing.
+Bans are logged at warn. A refused P2P, blocked-port, exploit or mining connection is logged at info once a minute per user and kind, naming the protocol or signature, and at debug otherwise. Setting `rule_id` to the ID of a detect rule in the panel reports hits to the panel as hits of that rule, once a minute per user and kind and once per ban, so they appear in its detect log and count toward its automatic ban (`auto_detect_ban_number`). Create one plaintext rule per kind, for example "P2P (node)", with a regex that matches nothing real, such as `^nextserver-abuse-p2p$`, since the node also applies the rule as a normal detect rule. 0 reports nothing.
 
 ### Behaviour worth knowing
 
