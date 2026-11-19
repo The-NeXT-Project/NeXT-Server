@@ -181,3 +181,19 @@ func TestDialFailuresDuringOutage(t *testing.T) {
 		t.Fatal("not banned after three refused destinations")
 	}
 }
+
+// v1.2.0's only production flood ban was an app retrying an API, 201
+// connections in 10 s; the default lets that through.
+func TestFloodDefaultAllowsRetryingApps(t *testing.T) {
+	guard, err := newAbuseGuard(nil, log.NewNOPFactory().Logger(), newAuditor())
+	if err != nil {
+		t.Fatal(err)
+	}
+	user := newUserState(context.Background(), 1)
+	api := M.ParseSocksaddrHostPort("open.feishu.cn", 443)
+	for i := 0; i < 250; i++ {
+		if err = guard.admit(context.Background(), user, N.NetworkTCP, api); err != nil {
+			t.Fatal("connection ", i+1, ": ", err)
+		}
+	}
+}

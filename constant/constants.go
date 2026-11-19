@@ -19,7 +19,7 @@ const (
 
 	DefaultFloodWindow                    = 10 * time.Second
 	DefaultFloodConnections               = 1000
-	DefaultFloodConnectionsPerDestination = 200
+	DefaultFloodConnectionsPerDestination = 500
 
 	DefaultBruteForceWindow                    = time.Minute
 	DefaultBruteForceHosts                     = 30

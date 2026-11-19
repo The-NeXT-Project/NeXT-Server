@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.2.1
+
+### Changed
+
+- The connection flood check bans a user for more than 500 connections to one destination within 10 seconds, up from 200. On v1.2.0's first day in production the only flood ban was an app retrying an API (201 connections to `open.feishu.cn:443`), not a flood; real HTTP floods run far above 500. Nodes that set `abuse.flood.connections_per_destination` keep their value.
+
 ## v1.2.0
 
 ### Security
